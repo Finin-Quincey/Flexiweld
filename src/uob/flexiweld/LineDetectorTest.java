@@ -58,7 +58,7 @@ public class LineDetectorTest {
 		boolean displayLines = true;
 		boolean mirror = true;
 
-		while(true){
+		while(HighGui.n_closed_windows == 0){
 
 			time = System.currentTimeMillis();
 
@@ -93,6 +93,8 @@ public class LineDetectorTest {
 			Imgproc.putText(frame, String.format("Mirror %s (M to toggle)", mirror ? "on" : "off"), textPt4, Core.FONT_HERSHEY_PLAIN, 2, ANNOTATION_COLOUR);
 
 			HighGui.imshow(WINDOW_NAME, frame);
+
+			if(HighGui.n_closed_windows > 0) break;
 
 			//System.out.println(1000/FRAMERATE - (int)frameTime);
 			int key = HighGui.waitKey(Math.max(5, 1000/FRAMERATE - (int)frameTime));
