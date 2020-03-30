@@ -5,8 +5,6 @@ import org.opencv.highgui.HighGui;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.videoio.VideoCapture;
 
-import java.util.function.BiConsumer;
-
 public class LineDetectorTest {
 
 	public static final int CAMERA_NUMBER = 0;
@@ -48,7 +46,7 @@ public class LineDetectorTest {
 		final Point textPt3 = new Point(10, newHeight - 60);
 		final Point textPt4 = new Point(10, newHeight - 30);
 
-		setupFlipMatrices(mapX, mapY);
+		Utils.setupFlipMatrices(mapX, mapY);
 
 		HighGui.namedWindow(WINDOW_NAME, HighGui.WINDOW_AUTOSIZE);
 		//HighGui.resizeWindow(WINDOW_NAME, WIDTH, HEIGHT);
@@ -64,13 +62,13 @@ public class LineDetectorTest {
 
 			vc.read(frame);
 
-			frame = process(frame, (s, d) -> Imgproc.resize(s, d, size));
-			if(mirror) frame = process(frame, (s, d) -> Imgproc.remap(s, d, mapX, mapY, Imgproc.INTER_LINEAR));
+			frame = Utils.process(frame, (s, d) -> Imgproc.resize(s, d, size));
+			if(mirror) frame = Utils.process(frame, (s, d) -> Imgproc.remap(s, d, mapX, mapY, Imgproc.INTER_LINEAR));
 
 			// Edge detection
-			edges = process(frame, (s, d) -> Imgproc.Canny(s, d, 50, 200, 3, false));
+			edges = Utils.process(frame, (s, d) -> Imgproc.Canny(s, d, 50, 200, 3, false));
 
-			if(displayEdges) frame = process(edges, (s, d) -> Imgproc.cvtColor(s, d, Imgproc.COLOR_GRAY2BGR));
+			if(displayEdges) frame = Utils.process(edges, (s, d) -> Imgproc.cvtColor(s, d, Imgproc.COLOR_GRAY2BGR));
 
 			if(displayLines){
 				// Probabilistic Hough Line Transform
@@ -107,43 +105,6 @@ public class LineDetectorTest {
 
 		HighGui.destroyAllWindows();
 		System.exit(0);
-	}
-
-	private static void setupFlipMatrices(Mat mapX, Mat mapY){
-		// TODO: Figure out what this is actually doing!
-		// (I know what it's doing in theory, but the actual matrix manipulation bit is kinda opaque)
-		float[] buffX = new float[(int)(mapX.total() * mapX.channels())];
-		mapX.get(0, 0, buffX);
-		float[] buffY = new float[(int)(mapY.total() * mapY.channels())];
-		mapY.get(0, 0, buffY);
-
-		for(int i = 0; i < mapX.rows(); i++){
-			for(int j = 0; j < mapX.cols(); j++){
-				buffX[i * mapX.cols() + j] = mapY.cols() - j;
-				buffY[i * mapY.cols() + j] = i;
-			}
-		}
-
-		mapX.put(0, 0, buffX);
-		mapY.put(0, 0, buffY);
-	}
-
-	/**
-	 * Processes the given source image using the given operation, and returns the resulting destination image. This
-	 * method eliminates the need for explicit creation of a new destination image variable each time, allowing each
-	 * operation to be condensed to a one-liner, much like {@code String} manipulation. For example, a typical call
-	 * might look like this:
-	 * <p></p>
-	 * <center>{@code frame = process(frame, (s, d) -> Imgproc.resize(s, d, new Size(width, height)));}</center>
-	 * @param src The source image to be processed
-	 * @param operation A {@link BiConsumer} representing the operation to be performed, usually expressed as a lambda
-	 *                  expression.
-	 * @return The resulting destination image. This may be assigned to the source image variable to overwrite it.
-	 */
-	public static Mat process(Mat src, BiConsumer<Mat, Mat> operation){
-		Mat dest = Mat.zeros(1, 1, CvType.CV_8UC1);
-		operation.accept(src, dest);
-		return dest;
 	}
 
 }
