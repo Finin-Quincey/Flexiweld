@@ -66,14 +66,14 @@ public class LineDetectorTest {
 			if(mirror) frame = Utils.process(frame, (s, d) -> Imgproc.remap(s, d, mapX, mapY, Imgproc.INTER_LINEAR));
 
 			// Edge detection
-			edges = Utils.process(frame, (s, d) -> Imgproc.Canny(s, d, 50, 200, 3, false));
+			edges = Utils.process(frame, (s, d) -> Imgproc.Canny(s, d, 200, 250, 3, false));
 
 			if(displayEdges) frame = Utils.process(edges, (s, d) -> Imgproc.cvtColor(s, d, Imgproc.COLOR_GRAY2BGR));
 
 			if(displayLines){
 				// Probabilistic Hough Line Transform
 				Mat lines = new Mat(); // will hold the results of the detection
-				Imgproc.HoughLinesP(edges, lines, 1, Math.PI / 180, 50, 50, 10); // runs the actual detection
+				Imgproc.HoughLinesP(edges, lines, 1, Math.PI / 180, 180, 75, 50); // runs the actual detection
 				// Draw the lines
 				for(int x = 0; x < lines.rows(); x++){
 					double[] l = lines.get(x, 0);
