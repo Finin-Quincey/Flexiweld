@@ -16,13 +16,6 @@ public class SliderGui implements ActionListener {
 	public static final int FRAMERATE = 50;
 	public static final Scalar ANNOTATION_COLOUR = new Scalar(0, 255, 0); // This is blue-green-red for some reason
 
-	private static final int THRESHOLD1_SLIDER_MIN = 0;
-	private static final int THRESHOLD1_SLIDER_MAX = 2000;
-	private static final int THRESHOLD2_SLIDER_MIN = 0;
-	private static final int THRESHOLD2_SLIDER_MAX = 2000;
-	private static final int APERTURE_SLIDER_MIN = 3;
-	private static final int APERTURE_SLIDER_MAX = 7;
-
 	private final VideoCapture vc;
 	public final Size size;
 	private final Mat mapX, mapY;
@@ -30,6 +23,10 @@ public class SliderGui implements ActionListener {
 	private int threshold1 = 50;
 	private int threshold2 = 200;
 	private int aperture = 3;
+
+	private int houghThreshold = 50;
+	private int minLineLength = 50;
+	private int maxLineGap = 10;
 
 	private Mat frame;
 	private Mat edges;
@@ -85,40 +82,56 @@ public class SliderGui implements ActionListener {
 
 		JPanel sliderPanel = new JPanel();
 		sliderPanel.setLayout(new BoxLayout(sliderPanel, BoxLayout.PAGE_AXIS));
+
 		sliderPanel.add(new JLabel("Canny Edge Detector Parameters"));
 
+		JSlider slider;
+
 		sliderPanel.add(new JLabel("Threshold 1"));
-		JSlider slider = new JSlider(THRESHOLD1_SLIDER_MIN, THRESHOLD1_SLIDER_MAX, threshold1);
-		slider.setMajorTickSpacing((THRESHOLD1_SLIDER_MAX - THRESHOLD1_SLIDER_MIN) / 20);
-		slider.setMinorTickSpacing((THRESHOLD1_SLIDER_MAX - THRESHOLD1_SLIDER_MIN) / 80);
-		slider.setPaintTicks(true);
-		slider.setPaintLabels(true);
+		slider = createSlider(0, 2000, threshold1, 20, 80);
 		slider.addChangeListener(e -> threshold1 = ((JSlider)e.getSource()).getValue());
 		sliderPanel.add(slider);
 
 		sliderPanel.add(new JLabel("Threshold 2"));
-		JSlider slider1 = new JSlider(THRESHOLD2_SLIDER_MIN, THRESHOLD2_SLIDER_MAX, threshold2);
-		slider1.setMajorTickSpacing((THRESHOLD2_SLIDER_MAX - THRESHOLD2_SLIDER_MIN) / 20);
-		slider1.setMinorTickSpacing((THRESHOLD2_SLIDER_MAX - THRESHOLD2_SLIDER_MIN) / 80);
-		slider1.setPaintTicks(true);
-		slider1.setPaintLabels(true);
-		slider1.addChangeListener(e -> threshold2 = ((JSlider)e.getSource()).getValue());
-		sliderPanel.add(slider1);
+		slider = createSlider(0, 2000, threshold2, 20, 80);
+		slider.addChangeListener(e -> threshold2 = ((JSlider)e.getSource()).getValue());
+		sliderPanel.add(slider);
 
 		sliderPanel.add(new JLabel("Aperture"));
-		JSlider slider2 = new JSlider(APERTURE_SLIDER_MIN, APERTURE_SLIDER_MAX, aperture);
-		slider2.setMajorTickSpacing(2);
-		slider2.setMinorTickSpacing(2);
-		slider2.setPaintTicks(true);
-		slider2.setPaintLabels(true);
-		slider2.setName("Aperture");
-		slider2.addChangeListener(e -> aperture = 1 + 2 * Math.round((((JSlider)e.getSource()).getValue() - 1) / 2f));
-		sliderPanel.add(slider2);
+		slider = createSlider(3, 7, aperture, 2, 2);
+		slider.addChangeListener(e -> aperture = 1 + 2 * Math.round((((JSlider)e.getSource()).getValue() - 1) / 2f));
+		sliderPanel.add(slider);
+
+		sliderPanel.add(new JLabel("Hough Line Transform Parameters"));
+
+		sliderPanel.add(new JLabel("Threshold"));
+		slider = createSlider(0, 2000, houghThreshold, 20, 80);
+		slider.addChangeListener(e -> houghThreshold = ((JSlider)e.getSource()).getValue());
+		sliderPanel.add(slider);
+
+		sliderPanel.add(new JLabel("Minimum Line Length"));
+		slider = createSlider(0, 1000, minLineLength, 20, 80);
+		slider.addChangeListener(e -> minLineLength = ((JSlider)e.getSource()).getValue());
+		sliderPanel.add(slider);
+
+		sliderPanel.add(new JLabel("Maximum Line Gap"));
+		slider = createSlider(0, 200, maxLineGap, 20, 80);
+		slider.addChangeListener(e -> maxLineGap = ((JSlider)e.getSource()).getValue());
+		sliderPanel.add(slider);
 
 		pane.add(sliderPanel, BorderLayout.PAGE_START);
 		imgLabel = new JLabel(new ImageIcon(img));
 		pane.add(imgLabel, BorderLayout.CENTER);
 
+	}
+
+	private JSlider createSlider(int min, int max, int value, int majorTicks, int minorTicks){
+		JSlider slider = new JSlider(min, max, value);
+		slider.setMajorTickSpacing((max - min) / majorTicks);
+		slider.setMinorTickSpacing((max - min) / minorTicks);
+		slider.setPaintTicks(true);
+		slider.setPaintLabels(true);
+		return slider;
 	}
 
 	@Override
@@ -137,7 +150,7 @@ public class SliderGui implements ActionListener {
 
 		// Probabilistic Hough Line Transform
 		Mat lines = new Mat(); // will hold the results of the detection
-		Imgproc.HoughLinesP(edges, lines, 1, Math.PI / 180, 50, 50, 10); // runs the actual detection
+		Imgproc.HoughLinesP(edges, lines, 1, Math.PI / 180, houghThreshold, minLineLength, maxLineGap); // runs the actual detection
 		// Draw the lines
 		for(int x = 0; x < lines.rows(); x++){
 			double[] l = lines.get(x, 0);
