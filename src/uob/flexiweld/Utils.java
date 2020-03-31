@@ -26,7 +26,7 @@ public final class Utils {
 	 * @return The resulting destination image. This may be assigned to the source image variable to overwrite it.
 	 */
 	public static Mat process(Mat src, BiConsumer<Mat, Mat> operation){
-		Mat dest = Mat.zeros(1, 1, CvType.CV_8UC1);
+		Mat dest = Mat.zeros(src.rows(), src.cols(), src.type());
 		operation.accept(src, dest);
 		return dest;
 	}
