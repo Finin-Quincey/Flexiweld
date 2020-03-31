@@ -1,17 +1,17 @@
 package uob.flexiweld;
 
+import org.opencv.core.Point;
 import org.opencv.core.*;
 import org.opencv.highgui.HighGui;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.videoio.VideoCapture;
 
+import java.awt.*;
+
 public class LineDetectorTest {
 
 	public static final int CAMERA_NUMBER = 0;
 	public static final String WINDOW_NAME = "Line Detection Test";
-
-	public static final int WIDTH = 1920;
-	public static final int HEIGHT = 1080;
 
 	public static final int FRAMERATE = 30; // Target framerate in frames per second
 
@@ -32,7 +32,9 @@ public class LineDetectorTest {
 
 		vc.read(frame);
 
-		float scaleFactor = Math.min(WIDTH/frame.width(), HEIGHT/frame.height());
+		Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+
+		float scaleFactor = Math.min(screenSize.width/frame.width(), screenSize.height/frame.height());
 		int newWidth = (int)(frame.width() * scaleFactor);
 		int newHeight = (int)(frame.height() * scaleFactor);
 		final Size size = new Size(newWidth, newHeight);
