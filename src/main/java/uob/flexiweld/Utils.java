@@ -1,8 +1,10 @@
 package uob.flexiweld;
 
-import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.function.BiConsumer;
 
 /**
@@ -48,6 +50,19 @@ public final class Utils {
 
 		mapX.put(0, 0, buffX);
 		mapY.put(0, 0, buffY);
+	}
+
+	/**
+	 * Flattens the given nested collection. The returned collection is an unmodifiable collection of all the elements
+	 * contained within all of the sub-collections of the given nested collection.
+	 * @param collection A nested collection to flatten
+	 * @param <E> The type of elements in the given nested collection
+	 * @return The resulting flattened collection.
+	 */
+	public static <E> Collection<E> flatten(Collection<? extends Collection<E>> collection){
+		Collection<E> result = new ArrayList<>();
+		collection.forEach(result::addAll);
+		return Collections.unmodifiableCollection(result);
 	}
 
 }

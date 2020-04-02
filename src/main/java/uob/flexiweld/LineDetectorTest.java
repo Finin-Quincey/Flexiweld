@@ -7,6 +7,11 @@ import org.opencv.imgproc.Imgproc;
 import org.opencv.videoio.VideoCapture;
 
 import java.awt.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class LineDetectorTest {
 
@@ -15,7 +20,19 @@ public class LineDetectorTest {
 
 	public static final int FRAMERATE = 30; // Target framerate in frames per second
 
-	public static final Scalar ANNOTATION_COLOUR = new Scalar(0, 255, 0); // This is blue-green-red for some reason
+	public static final double ANGLE_THRESHOLD = Math.toRadians(10); // Lines within 2 degrees are considered parallel
+	public static final double DISTANCE_THRESHOLD = 10;
+
+	public static final int BORDER = 150;
+
+	public static final Scalar WHITE = new Scalar(255, 255, 255); // This is blue-green-red for some reason
+	public static final Scalar GREEN = new Scalar(0, 255, 0);
+	public static final Scalar CYAN = new Scalar(255, 255, 0);
+	public static final Scalar YELLOW = new Scalar(0, 255, 255);
+
+	public static final int INTERP_FRAMES = 5; // Number of frames to average over for tube detection
+
+	private static final List<List<Line>> prevLines = new ArrayList<>();
 
 	public static void main(String[] args){
 
@@ -68,29 +85,108 @@ public class LineDetectorTest {
 			if(mirror) frame = Utils.process(frame, (s, d) -> Imgproc.remap(s, d, mapX, mapY, Imgproc.INTER_LINEAR));
 
 			// Edge detection
-			edges = Utils.process(frame, (s, d) -> Imgproc.Canny(s, d, 200, 250, 3, false));
+			edges = Utils.process(frame, (s, d) -> Imgproc.Canny(s, d, 50, 200, 3, false));
 
 			if(displayEdges) frame = Utils.process(edges, (s, d) -> Imgproc.cvtColor(s, d, Imgproc.COLOR_GRAY2BGR));
 
 			if(displayLines){
+
 				// Probabilistic Hough Line Transform
-				Mat lines = new Mat(); // will hold the results of the detection
-				Imgproc.HoughLinesP(edges, lines, 1, Math.PI / 180, 180, 75, 50); // runs the actual detection
+				Mat lineMatrix = new Mat(); // will hold the results of the detection
+				Imgproc.HoughLinesP(edges, lineMatrix, 1, Math.PI / 180, 100, 50, 100); // runs the actual detection
+
+				List<Line> lines = new ArrayList<>();
+
 				// Draw the lines
-				for(int x = 0; x < lines.rows(); x++){
-					double[] l = lines.get(x, 0);
-					Imgproc.line(frame, new Point(l[0], l[1]), new Point(l[2], l[3]), ANNOTATION_COLOUR, 2, Imgproc.LINE_AA, 0);
+				for(int i = 0; i < lineMatrix.rows(); i++){
+
+					double[] l = lineMatrix.get(i, 0);
+					// Discard lines that are on the edge of the frame, we don't want to detect the edge
+					if(l[0] < BORDER && l[2] < BORDER || l[0] > frame.width() - BORDER && l[2] > frame.width() - BORDER
+					|| l[1] < BORDER && l[3] < BORDER || l[1] > frame.height() - BORDER && l[3] > frame.height() - BORDER)
+						continue;
+					// Create the line, add to the list and draw it
+					Line line = new Line(l[0], l[1], l[2], l[3]);
+					lines.add(line);
+					//Imgproc.line(frame, line.getStart(), line.getEnd(), GREEN, 2, Imgproc.LINE_AA, 0);
 				}
+
+				lines.sort(Comparator.comparing(Line::angle));
+
+				prevLines.add(lines);
+
+				if(prevLines.size() > INTERP_FRAMES) prevLines.remove(0);
+
+				List<Line> allPrevLines = new ArrayList<>(Utils.flatten(prevLines));
+				Collections.reverse(allPrevLines); // Do the more recent lines first
+
+				List<Line> averagedLines = new ArrayList<>();
+
+				while(!allPrevLines.isEmpty()){
+
+					Line ref = allPrevLines.get(0);
+
+					List<Line> coincident = new ArrayList<>();
+
+					for(Line line : allPrevLines){
+						// Determine if each line should be considered coincident with ref, and if so add to the list
+						if(ref.distanceTo(line.midpoint()) < DISTANCE_THRESHOLD && Line.acuteAngleBetween(ref, line) < ANGLE_THRESHOLD){
+							coincident.add(line);
+						}
+					}
+
+					allPrevLines.removeAll(coincident);
+
+					List<Point> starts = coincident.stream().map(l -> l.xRectified().getStart()).collect(Collectors.toList());
+					List<Point> ends = coincident.stream().map(l -> l.xRectified().getEnd()).collect(Collectors.toList());
+
+					Line averageLine = new Line(starts.stream().mapToDouble(p -> p.x).average().orElse(0),
+												starts.stream().mapToDouble(p -> p.y).average().orElse(0),
+												ends.stream().mapToDouble(p -> p.x).average().orElse(0),
+												ends.stream().mapToDouble(p -> p.y).average().orElse(0));
+
+					// Most extreme ends of lines - since we x-rectified them these are simply the max/min x coords
+					Point start = starts.stream().min(Comparator.comparingDouble(p -> p.x)).orElse(null);
+					Point end = ends.stream().max(Comparator.comparingDouble(p -> p.x)).orElse(null);
+
+					averageLine = new Line(averageLine.nearestPointTo(start), averageLine.nearestPointTo(end));
+
+					averagedLines.add(averageLine);
+
+					Imgproc.line(frame, averageLine.getStart(), averageLine.getEnd(), CYAN, 2, Imgproc.LINE_AA, 0);
+
+				}
+
+				List<Line> centrelines = new ArrayList<>();
+
+				for(int i=0; i<averagedLines.size(); i++){
+					Line lineA = averagedLines.get(i);
+					Line lineB = averagedLines.get((i+1) % averagedLines.size());
+					if(Line.acuteAngleBetween(lineA, lineB) < ANGLE_THRESHOLD){
+						Line centreline = Line.equidistant(lineA, lineB);
+						centrelines.add(centreline);
+						Imgproc.line(frame, centreline.getStart(), centreline.getEnd(), YELLOW, 2, Imgproc.LINE_AA, 0);
+					}
+				}
+
+				// Super quick fudge to try and read an angle
+				if(centrelines.size() >= 2){
+					Line lineA = centrelines.get(0);
+					Line lineB = centrelines.get(1);
+					Imgproc.putText(frame, String.format("%.2f deg", Math.toDegrees(Line.acuteAngleBetween(lineA, lineB))),
+							lineA.getStart(), Core.FONT_HERSHEY_PLAIN, 2, WHITE);
+				}
+
 			}
 
 			long frameTime = System.currentTimeMillis() - time;
 			float fps = 1000f/frameTime;
 
-			Imgproc.putText(frame, "Press Esc to close", textPt0, Core.FONT_HERSHEY_PLAIN, 2, ANNOTATION_COLOUR);
-			Imgproc.putText(frame, String.format("%.2f fps", fps), textPt1, Core.FONT_HERSHEY_PLAIN, 2, ANNOTATION_COLOUR);
-			Imgproc.putText(frame, String.format("Edges %s (E to toggle)", displayEdges ? "on" : "off"), textPt2, Core.FONT_HERSHEY_PLAIN, 2, ANNOTATION_COLOUR);
-			Imgproc.putText(frame, String.format("Lines %s (L to toggle)", displayLines ? "on" : "off"), textPt3, Core.FONT_HERSHEY_PLAIN, 2, ANNOTATION_COLOUR);
-			Imgproc.putText(frame, String.format("Mirror %s (M to toggle)", mirror ? "on" : "off"), textPt4, Core.FONT_HERSHEY_PLAIN, 2, ANNOTATION_COLOUR);
+			Imgproc.putText(frame, "Press Esc to close", textPt0, Core.FONT_HERSHEY_PLAIN, 2, GREEN);
+			Imgproc.putText(frame, String.format("%.2f fps", fps), textPt1, Core.FONT_HERSHEY_PLAIN, 2, GREEN);
+			Imgproc.putText(frame, String.format("Edges %s (E to toggle)", displayEdges ? "on" : "off"), textPt2, Core.FONT_HERSHEY_PLAIN, 2, GREEN);
+			Imgproc.putText(frame, String.format("Lines %s (L to toggle)", displayLines ? "on" : "off"), textPt3, Core.FONT_HERSHEY_PLAIN, 2, GREEN);
+			Imgproc.putText(frame, String.format("Mirror %s (M to toggle)", mirror ? "on" : "off"), textPt4, Core.FONT_HERSHEY_PLAIN, 2, GREEN);
 
 			HighGui.imshow(WINDOW_NAME, frame);
 
