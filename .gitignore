@@ -1,4 +1,7 @@
 Thumbs.db
 .idea
-out
+out/*
+!out/artifacts/
+out/artifacts/Flexiweld_jar/*
+!out/artifacts/Flexiweld_jar/Flexiweld.jar
 *.iml
