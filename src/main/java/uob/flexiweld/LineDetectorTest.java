@@ -23,7 +23,7 @@ public class LineDetectorTest {
 	public static final double ANGLE_THRESHOLD = Math.toRadians(10); // Lines within 2 degrees are considered parallel
 	public static final double DISTANCE_THRESHOLD = 10;
 
-	public static final int BORDER = 150;
+	public static final int BORDER = 20;
 
 	public static final Scalar WHITE = new Scalar(255, 255, 255); // This is blue-green-red for some reason
 	public static final Scalar GREEN = new Scalar(0, 255, 0);
