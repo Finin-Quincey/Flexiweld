@@ -1,6 +1,7 @@
 package uob.flexiweld;
 
 import org.opencv.core.Mat;
+import org.opencv.core.Size;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -31,6 +32,38 @@ public final class Utils {
 		Mat dest = Mat.zeros(src.rows(), src.cols(), src.type());
 		operation.accept(src, dest);
 		return dest;
+	}
+
+	/**
+	 * Generates an array of {@link Line} objects which form a grid with the given dimensions that covers the area
+	 * specified by the given {@link Size} object.
+	 * @param rows The number of rows in the grid (the number of horizontal lines will be 1 less than this number)
+	 * @param columns The number of columns in the grid (the number of vertical lines will be 1 less than this number)
+	 * @param size The overall dimensions of the grid
+	 * @return The resulting array of line objects
+	 */
+	public static Line[] generateGrid(int rows, int columns, Size size){
+
+		return new Line[]{
+				new Line(0, size.height * 0.1, size.width, size.height * 0.1),
+				new Line(0, size.height * 0.2, size.width, size.height * 0.2),
+				new Line(0, size.height * 0.3, size.width, size.height * 0.3),
+				new Line(0, size.height * 0.4, size.width, size.height * 0.4),
+				new Line(0, size.height * 0.5, size.width, size.height * 0.5),
+				new Line(0, size.height * 0.6, size.width, size.height * 0.6),
+				new Line(0, size.height * 0.7, size.width, size.height * 0.7),
+				new Line(0, size.height * 0.8, size.width, size.height * 0.8),
+				new Line(0, size.height * 0.9, size.width, size.height * 0.9),
+				new Line(size.width * 0.1, 0, size.width * 0.1, size.height),
+				new Line(size.width * 0.2, 0, size.width * 0.2, size.height),
+				new Line(size.width * 0.3, 0, size.width * 0.3, size.height),
+				new Line(size.width * 0.4, 0, size.width * 0.4, size.height),
+				new Line(size.width * 0.5, 0, size.width * 0.5, size.height),
+				new Line(size.width * 0.6, 0, size.width * 0.6, size.height),
+				new Line(size.width * 0.7, 0, size.width * 0.7, size.height),
+				new Line(size.width * 0.8, 0, size.width * 0.8, size.height),
+				new Line(size.width * 0.9, 0, size.width * 0.9, size.height),
+		};
 	}
 
 	public static void setupFlipMatrices(Mat mapX, Mat mapY){

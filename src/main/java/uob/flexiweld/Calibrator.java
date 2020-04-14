@@ -29,6 +29,51 @@ public class Calibrator {
 		vc.open(CAMERA_NUMBER);
 		System.out.println(vc.isOpened() ? "Video capture opened successfully" : "Failed to open video capture");
 
+		// Output matrices
+		Mat cameraMatrix = new Mat(3, 3, CvType.CV_32F);
+		Mat distCoeffs = new Mat(1, 4, CvType.CV_32F);
+		List<Mat> rvecs = new ArrayList<>();
+		List<Mat> tvecs = new ArrayList<>();
+
+		Mat frame = new Mat();
+
+		Line[] grid = Utils.generateGrid(9, 12, new Size(frame.width(), frame.height()));
+
+		runCalibrationSequence(vc, cameraMatrix, distCoeffs, rvecs, tvecs);
+
+		while(HighGui.n_closed_windows == 0){
+
+			vc.read(frame);
+
+			frame = Utils.process(frame, (s, d) -> Imgproc.undistort(s, d, cameraMatrix, distCoeffs));
+
+			for(Line line : grid) Imgproc.line(frame, line.getStart(), line.getEnd(), LineDetectorTest.GREEN);
+
+			HighGui.imshow(WINDOW_NAME, frame);
+			HighGui.waitKey(5);
+		}
+
+		HighGui.destroyAllWindows();
+		System.exit(0);
+
+	}
+
+	private static Mat generateChessboardPoints(Size size, float squareSize){
+
+		Mat points = new MatOfPoint3f();
+
+		for(int y = 0; y < size.height; ++y){
+			for(int x = 0; x < size.width; ++x){
+				// A bit unintuitive but hey, we got there in the end!
+				points.push_back(new MatOfPoint3f(new Point3(y * squareSize, x * squareSize, 0)));
+			}
+		}
+
+		return points;
+	}
+
+	public static void runCalibrationSequence(VideoCapture vc, Mat cameraMatrix, Mat distCoeffs, List<Mat> rvecs, List<Mat> tvecs){
+
 		List<Mat> objectPoints = Collections.nCopies(CALIBRATION_IMAGES, generateChessboardPoints(CHESSBOARD_SIZE, SQUARE_SIZE_MM));
 		List<Mat> imagePoints = new ArrayList<>();
 
@@ -37,12 +82,6 @@ public class Calibrator {
 
 		vc.read(frame);
 		Size size = new Size(frame.width(), frame.height());
-
-		// Output matrices
-		Mat cameraMatrix = new Mat(3, 3, CvType.CV_32F);
-		Mat distCoeffs = new Mat(1, 4, CvType.CV_32F);
-		List<Mat> rvecs = new ArrayList<>();
-		List<Mat> tvecs = new ArrayList<>();
 
 		while(imagePoints.size() < CALIBRATION_IMAGES){
 
@@ -62,6 +101,8 @@ public class Calibrator {
 				HighGui.destroyAllWindows();
 				System.exit(0);
 			}
+
+			vc.read(frame);
 
 			MatOfPoint2f corners = new MatOfPoint2f();
 
@@ -90,34 +131,6 @@ public class Calibrator {
 		}
 
 		Calib3d.calibrateCamera(objectPoints, imagePoints, size, cameraMatrix, distCoeffs, rvecs, tvecs);
-
-		while(HighGui.n_closed_windows == 0){
-
-			vc.read(frame);
-
-			frame = Utils.process(frame, (s, d) -> Imgproc.undistort(s, d, cameraMatrix, distCoeffs));
-
-			HighGui.imshow(WINDOW_NAME, frame);
-			HighGui.waitKey(5);
-		}
-
-		HighGui.destroyAllWindows();
-		System.exit(0);
-
-	}
-
-	private static Mat generateChessboardPoints(Size size, float squareSize){
-
-		Mat points = new MatOfPoint3f();
-
-		for(int y = 0; y < size.height; ++y){
-			for(int x = 0; x < size.width; ++x){
-				// A bit unintuitive but hey, we got there in the end!
-				points.push_back(new MatOfPoint3f(new Point3(y * squareSize, x * squareSize, 0)));
-			}
-		}
-
-		return points;
 	}
 
 }

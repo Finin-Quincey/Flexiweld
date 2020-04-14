@@ -58,6 +58,14 @@ public class LineDetectorTest {
 		Mat frame = new Mat();
 		Mat edges;
 
+		// Calibrator output matrices
+		Mat cameraMatrix = new Mat(3, 3, CvType.CV_32F);
+		Mat distCoeffs = new Mat(1, 4, CvType.CV_32F);
+		List<Mat> rvecs = new ArrayList<>();
+		List<Mat> tvecs = new ArrayList<>();
+
+		Calibrator.runCalibrationSequence(vc, cameraMatrix, distCoeffs, rvecs, tvecs);
+
 		vc.read(frame);
 
 		Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
@@ -71,10 +79,15 @@ public class LineDetectorTest {
 		final Mat mapY = new Mat(size, CvType.CV_32F);
 
 		final Point textPt0 = new Point(10, 30);
-		final Point textPt1 = new Point(10, 100);
-		final Point textPt2 = new Point(10, newHeight - 90);
-		final Point textPt3 = new Point(10, newHeight - 60);
-		final Point textPt4 = new Point(10, newHeight - 30);
+		final Point textPt1 = new Point(10, 80);
+		final Point textPt2 = new Point(10, newHeight - 70);
+		final Point textPt3 = new Point(10, newHeight - 40);
+		final Point textPt4 = new Point(10, newHeight - 10);
+		final Point textPt5 = new Point(newWidth/2f, newHeight - 70);
+		final Point textPt6 = new Point(newWidth/2f, newHeight - 40);
+		final Point textPt7 = new Point(newWidth/2f, newHeight - 10);
+
+		Line[] grid = Utils.generateGrid(9, 12, size);
 
 		Utils.setupFlipMatrices(mapX, mapY);
 
@@ -85,6 +98,8 @@ public class LineDetectorTest {
 		boolean displayEdges = false;
 		boolean displayLines = true;
 		boolean mirror = true;
+		boolean showGrid = false;
+		boolean correction = true;
 
 		while(HighGui.n_closed_windows == 0){
 
@@ -92,7 +107,9 @@ public class LineDetectorTest {
 
 			vc.read(frame);
 
-			frame = Utils.process(frame, (s, d) -> Imgproc.resize(s, d, size));
+			// Preprocessing
+			if(correction) frame = Utils.process(frame, (s, d) -> Imgproc.undistort(s, d, cameraMatrix, distCoeffs)); // Lens correction
+			frame = Utils.process(frame, (s, d) -> Imgproc.resize(s, d, size)); // Resize to fit screen nicely
 			if(mirror) frame = Utils.process(frame, (s, d) -> Imgproc.remap(s, d, mapX, mapY, Imgproc.INTER_LINEAR));
 
 			// Edge detection
@@ -164,14 +181,20 @@ public class LineDetectorTest {
 
 			}
 
+			if(showGrid){
+				for(Line line : grid) Imgproc.line(frame, line.getStart(), line.getEnd(), LineDetectorTest.GREEN);
+			}
+
 			long frameTime = System.currentTimeMillis() - time;
 			float fps = 1000f/frameTime;
 
 			Imgproc.putText(frame, "Press Esc to close", textPt0, Core.FONT_HERSHEY_PLAIN, 2, GREEN);
 			Imgproc.putText(frame, String.format("%.2f fps", fps), textPt1, Core.FONT_HERSHEY_PLAIN, 2, GREEN);
-			Imgproc.putText(frame, String.format("Edges %s (E to toggle)", displayEdges ? "on" : "off"), textPt2, Core.FONT_HERSHEY_PLAIN, 2, GREEN);
-			Imgproc.putText(frame, String.format("Lines %s (L to toggle)", displayLines ? "on" : "off"), textPt3, Core.FONT_HERSHEY_PLAIN, 2, GREEN);
-			Imgproc.putText(frame, String.format("Mirror %s (M to toggle)", mirror ? "on" : "off"), textPt4, Core.FONT_HERSHEY_PLAIN, 2, GREEN);
+			Imgproc.putText(frame, String.format("Edges %s (E to toggle)", displayEdges ? "on" : "off"), textPt2, Core.FONT_HERSHEY_PLAIN, 2, displayEdges ? GREEN : RED);
+			Imgproc.putText(frame, String.format("Lines %s (L to toggle)", displayLines ? "on" : "off"), textPt3, Core.FONT_HERSHEY_PLAIN, 2, displayLines ? GREEN : RED);
+			Imgproc.putText(frame, String.format("Mirror %s (M to toggle)", mirror ? "on" : "off"), textPt4, Core.FONT_HERSHEY_PLAIN, 2, mirror ? GREEN : RED);
+			Imgproc.putText(frame, String.format("Grid %s (G to toggle)", showGrid ? "on" : "off"), textPt5, Core.FONT_HERSHEY_PLAIN, 2, showGrid ? GREEN : RED);
+			Imgproc.putText(frame, String.format("Distortion Correction %s (C to toggle)", correction ? "on" : "off"), textPt6, Core.FONT_HERSHEY_PLAIN, 2, correction ? GREEN : RED);
 
 			HighGui.imshow(WINDOW_NAME, frame);
 
@@ -183,6 +206,8 @@ public class LineDetectorTest {
 			if(key == 69) displayEdges = !displayEdges; // E to toggle edges
 			if(key == 76) displayLines = !displayLines; // L to toggle line detector
 			if(key == 77) mirror = !mirror; // M to toggle mirror
+			if(key == 71) showGrid = !showGrid; // G to toggle grid
+			if(key == 67) correction = !correction; // C to toggle lens correction
 
 		}
 
