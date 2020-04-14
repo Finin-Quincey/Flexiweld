@@ -103,6 +103,7 @@ public class LineDetectorTest {
 			if(displayLines){
 
 				List<Line> lines = extractLines(edges, BORDER);
+				//for(Line line : lines) Imgproc.line(frame, line.getStart(), line.getEnd(), GREEN, 2, Imgproc.LINE_AA, 0);
 
 				lines.sort(Comparator.comparing(Line::angle));
 
@@ -215,7 +216,6 @@ public class LineDetectorTest {
 			// Create the line, add to the list and draw it
 			Line line = new Line(l[0], l[1], l[2], l[3]);
 			lines.add(line);
-			//Imgproc.line(frame, line.getStart(), line.getEnd(), GREEN, 2, Imgproc.LINE_AA, 0);
 		}
 
 		return lines;
