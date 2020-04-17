@@ -145,7 +145,9 @@ public class LineDetectorTest {
 
 					Line lineA = centrelines.get(i);
 
-					for(int j = i; j < centrelines.size(); j++){
+					List<Point> intersections = new ArrayList<>();
+
+					for(int j = 0; j < centrelines.size(); j++){
 
 						Line lineB = centrelines.get(j);
 
@@ -153,31 +155,49 @@ public class LineDetectorTest {
 
 						if(intersection != null){
 
-							// Sorting by angle earlier seems to mean line B always has the smaller angle
-							double startAngle = lineB.angle();
-							double endAngle = lineA.angle();
-							double angle = endAngle - startAngle;
+							intersections.add(intersection);
 
-							if(angle > Math.PI/2){
-								double prevStartAngle = startAngle;
-								startAngle = endAngle - Math.PI;
-								endAngle = prevStartAngle;
-								angle = endAngle - startAngle;
+							if(j >= i){ // Ignore intersections with lines that have already been processed
+
+								// Sorting by angle earlier seems to mean line B always has the smaller angle
+								double startAngle = lineB.angle();
+								double endAngle = lineA.angle();
+								double angle = endAngle - startAngle;
+
+								if(angle > Math.PI / 2){
+									double prevStartAngle = startAngle;
+									startAngle = endAngle - Math.PI;
+									endAngle = prevStartAngle;
+									angle = endAngle - startAngle;
+								}
+
+								double midAngle = (startAngle + endAngle) / 2; // Should be fine since centrelines are rectified
+
+								Imgproc.drawMarker(frame, intersection, Utils.YELLOW, Imgproc.MARKER_CROSS, 14, 2);
+
+								Imgproc.ellipse(frame, intersection, ELLIPSE_SIZE, 0, Math.toDegrees(startAngle),
+										Math.toDegrees(endAngle), Utils.YELLOW, 2);
+
+								Imgproc.putText(frame, String.format("%.2fdeg", Math.toDegrees(angle)),
+										new Point(intersection.x + ANGLE_RADIUS * Math.cos(midAngle),
+												intersection.y + ANGLE_RADIUS * Math.sin(midAngle) + 10),
+										Core.FONT_HERSHEY_PLAIN, 2, Utils.YELLOW, 2);
 							}
-
-							double midAngle = (startAngle + endAngle) / 2; // Should be fine since centrelines are rectified
-
-							Imgproc.drawMarker(frame, intersection, YELLOW, Imgproc.MARKER_CROSS, 14, 2);
-
-							Imgproc.ellipse(frame, intersection, ELLIPSE_SIZE, 0, Math.toDegrees(startAngle),
-									Math.toDegrees(endAngle), YELLOW, 2);
-
-							Imgproc.putText(frame, String.format("%.2fdeg", Math.toDegrees(angle)),
-									new Point(intersection.x + ANGLE_RADIUS * Math.cos(midAngle),
-											intersection.y  + ANGLE_RADIUS * Math.sin(midAngle) + 10),
-									Core.FONT_HERSHEY_PLAIN, 2, YELLOW, 2);
 						}
 					}
+
+					if(Math.abs(lineA.gradient()) > 1){
+						intersections.sort(Comparator.comparingDouble(p -> p.y));
+					}else{
+						intersections.sort(Comparator.comparingDouble(p -> p.x));
+					}
+
+					for(int j = 0; j < intersections.size() - 1; j++){
+						Line segment = new Line(intersections.get(j), intersections.get(j+1));
+						Imgproc.putText(frame, String.format("%.2f", segment.length()), segment.midpoint(),
+								Core.FONT_HERSHEY_PLAIN, 2, Utils.CYAN, 2);
+					}
+
 				}
 
 			}
