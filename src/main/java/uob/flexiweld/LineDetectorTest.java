@@ -120,6 +120,7 @@ public class LineDetectorTest {
 			if(displayLines){
 
 				List<Line> lines = extractLines(edges, BORDER);
+				if(lines.size() > 50) lines = lines.subList(0, 50);
 				//for(Line line : lines) Imgproc.line(frame, line.getStart(), line.getEnd(), GREEN, 2, Imgproc.LINE_AA, 0);
 
 				lines.sort(Comparator.comparing(Line::angle));
