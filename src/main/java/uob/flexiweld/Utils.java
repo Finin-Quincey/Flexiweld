@@ -1,6 +1,7 @@
 package uob.flexiweld;
 
 import org.opencv.core.Mat;
+import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 
 import java.util.ArrayList;
@@ -13,6 +14,16 @@ import java.util.function.BiConsumer;
  * @author Finin Quincey
  */
 public final class Utils {
+
+	// Remember these are blue-green-red (no idea why everything is BGR, seems a bit backwards to me)
+	public static final Scalar WHITE = new Scalar(255, 255, 255);
+	public static final Scalar BLACK = new Scalar(0, 0, 0);
+	public static final Scalar RED = new Scalar(0, 0, 255);
+	public static final Scalar GREEN = new Scalar(0, 255, 0);
+	public static final Scalar BLUE = new Scalar(255, 0, 0);
+	public static final Scalar CYAN = new Scalar(255, 255, 0);
+	public static final Scalar MAGENTA = new Scalar(255, 0, 255);
+	public static final Scalar YELLOW = new Scalar(0, 255, 255);
 
 	private Utils(){} // No instances!
 

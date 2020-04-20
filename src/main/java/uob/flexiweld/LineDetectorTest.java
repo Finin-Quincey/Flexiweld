@@ -8,7 +8,6 @@ import org.opencv.videoio.VideoCapture;
 
 import java.awt.*;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -28,15 +27,6 @@ public class LineDetectorTest {
 	public static final double WIDTH_THRESHOLD = 200; // Excludes e.g. the edges of the test card
 
 	public static final int BORDER = 150;
-
-	public static final Scalar WHITE = new Scalar(255, 255, 255); // This is blue-green-red for some reason
-	public static final Scalar BLACK = new Scalar(0, 0, 0);
-	public static final Scalar RED = new Scalar(0, 0, 255);
-	public static final Scalar GREEN = new Scalar(0, 255, 0);
-	public static final Scalar BLUE = new Scalar(255, 0, 0);
-	public static final Scalar CYAN = new Scalar(255, 255, 0);
-	public static final Scalar MAGENTA = new Scalar(255, 0, 255);
-	public static final Scalar YELLOW = new Scalar(0, 255, 255);
 
 	public static final double ANGLE_RADIUS = 60;
 	private static final Size ELLIPSE_SIZE = new Size(ANGLE_RADIUS - 10, ANGLE_RADIUS - 10);
@@ -64,9 +54,11 @@ public class LineDetectorTest {
 		List<Mat> rvecs = new ArrayList<>();
 		List<Mat> tvecs = new ArrayList<>();
 
-		Calibrator.runCalibrationSequence(vc, cameraMatrix, distCoeffs, rvecs, tvecs);
+		//Calibrator.runCalibrationSequence(vc, cameraMatrix, distCoeffs, rvecs, tvecs);
 
-		vc.read(frame);
+		vc.read(frame); // Reads in CVType.CV_8UC3
+
+		//final Mat bgRef = frame; // Initialise background image for background subtraction later
 
 		Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
 
@@ -96,10 +88,26 @@ public class LineDetectorTest {
 
 		long time;
 		boolean displayEdges = false;
-		boolean displayLines = true;
+		boolean displayLines = false;
 		boolean mirror = true;
 		boolean showGrid = false;
 		boolean correction = true;
+
+		LineTracker tracker = new LineTracker(5);
+
+//		for(int i=0; i<20; i++){
+//			tracker.processNextFrame(frame);
+//			vc.read(frame);
+//			frame = Utils.process(frame, (s, d) -> Imgproc.resize(s, d, size)); // Resize to fit screen nicely
+//			if(mirror) frame = Utils.process(frame, (s, d) -> Imgproc.remap(s, d, mapX, mapY, Imgproc.INTER_LINEAR));
+//			HighGui.imshow(WINDOW_NAME, frame);
+//		}
+//
+//		List<Line> backgroundLines = tracker.processNextFrame(frame);
+//
+//		HighGui.waitKey(2000);
+//
+//		tracker = new LineTracker(5); // Reinitialise to prevent any previous lines from carrying over
 
 		while(HighGui.n_closed_windows == 0){
 
@@ -108,114 +116,117 @@ public class LineDetectorTest {
 			vc.read(frame);
 
 			// Preprocessing
-			if(correction) frame = Utils.process(frame, (s, d) -> Imgproc.undistort(s, d, cameraMatrix, distCoeffs)); // Lens correction
+
+			// Background subtraction
+//			Mat diff = Utils.process(frame, (s, d) -> Core.absdiff(s, bgRef, d)); // Anything that hasn't changed -> black
+//			//thresh = Utils.process(thresh, (s, d) -> Imgproc.cvtColor(s, d, Imgproc.COLOR_BGR2GRAY)); // Greyscale
+//			//thresh = Utils.process(thresh, (s, d) -> Imgproc.threshold(s, d, 0.1, 1, Imgproc.THRESH_BINARY)); // Threshold
+//			frame = Utils.process(frame, (s, d) -> Imgproc.cvtColor(s, d, Imgproc.COLOR_BGR2GRAY)); // Greyscale
+//			diff = Utils.process(diff, (s, d) -> Imgproc.cvtColor(s, d, Imgproc.COLOR_BGR2GRAY)); // Greyscale
+//			Mat foreground = Utils.process(diff, (s, d) -> Core.compare(s, new Scalar(255 * 0.1), d, Core.CMP_GT)); // Threshold
+//			Mat background = Utils.process(diff, (s, d) -> Core.compare(s, new Scalar(255 * 0.5), d, Core.CMP_LE)); // Threshold
+//			//thresh = Utils.process(thresh, (s, d) -> Imgproc.cvtColor(s, d, Imgproc.COLOR_GRAY2BGR));
+//			final Mat fgThresh = Utils.process(foreground, (s, d) -> Core.divide(s, Scalar.all(255), d));
+//			final Mat bgThresh = Utils.process(background, (s, d) -> Core.divide(s, Scalar.all(255), d));
+//			foreground = Utils.process(frame, (s, d) -> Core.multiply(s, fgThresh, d));
+//			background = Utils.process(frame, (s, d) -> Core.multiply(s, bgThresh, d));
+//			background = Utils.process(background, (s, d) -> Imgproc.blur(s, d, new Size(100, 100)));
+//			Core.add(background, foreground, frame);
+//			frame = Utils.process(frame, (s, d) -> Imgproc.cvtColor(s, d, Imgproc.COLOR_GRAY2BGR)); // Greyscale
+//			//frame = foreground;
+
+			//if(correction) frame = Utils.process(frame, (s, d) -> Imgproc.undistort(s, d, cameraMatrix, distCoeffs)); // Lens correction
 			frame = Utils.process(frame, (s, d) -> Imgproc.resize(s, d, size)); // Resize to fit screen nicely
 			if(mirror) frame = Utils.process(frame, (s, d) -> Imgproc.remap(s, d, mapX, mapY, Imgproc.INTER_LINEAR));
 
-			// Edge detection
-			edges = Utils.process(frame, (s, d) -> Imgproc.Canny(s, d, 50, 200, 3, false));
+			tracker.edges(displayEdges);
 
-			if(displayEdges) frame = Utils.process(edges, (s, d) -> Imgproc.cvtColor(s, d, Imgproc.COLOR_GRAY2BGR));
+			List<Line> averagedLines = tracker.processNextFrame(frame);
 
-			if(displayLines){
+			// Remove background lines
+//			for(Line ref : backgroundLines){
+//				averagedLines.removeIf(l -> ref.distanceTo(l.midpoint()) < DISTANCE_THRESHOLD * 3 && Line.acuteAngleBetween(ref, l) < ANGLE_THRESHOLD * 3);
+//			}
 
-				List<Line> lines = extractLines(edges, BORDER);
-				if(lines.size() > 50) lines = lines.subList(0, 50);
-				//for(Line line : lines) Imgproc.line(frame, line.getStart(), line.getEnd(), GREEN, 2, Imgproc.LINE_AA, 0);
+			for(Line line : averagedLines) Imgproc.line(frame, line.getStart(), line.getEnd(), Utils.BLUE, 2, Imgproc.LINE_AA, 0);
 
-				lines.sort(Comparator.comparing(Line::angle));
+			List<Line> centrelines = findCentrelines(averagedLines, WIDTH_THRESHOLD, ANGLE_THRESHOLD);
+			centrelines.sort(Comparator.comparing(Line::angle).reversed());
 
-				prevLines.add(lines);
+			for(Line line : centrelines) Imgproc.line(frame, line.getStart(), line.getEnd(), Utils.CYAN, 2, Imgproc.LINE_AA, 0);
 
-				if(prevLines.size() > INTERP_FRAMES) prevLines.remove(0);
+			for(int i = 0; i < centrelines.size(); i++){
 
-				List<Line> allPrevLines = new ArrayList<>(Utils.flatten(prevLines));
-				Collections.reverse(allPrevLines); // Do the more recent lines first
+				Line lineA = centrelines.get(i);
 
-				List<Line> averagedLines = fuzzyAverageLines(allPrevLines, DISTANCE_THRESHOLD, ANGLE_THRESHOLD);
+				List<Point> intersections = new ArrayList<>();
 
-				for(Line line : averagedLines) Imgproc.line(frame, line.getStart(), line.getEnd(), BLUE, 2, Imgproc.LINE_AA, 0);
+				for(int j = 0; j < centrelines.size(); j++){
 
-				List<Line> centrelines = findCentrelines(averagedLines, WIDTH_THRESHOLD, ANGLE_THRESHOLD);
-				centrelines.sort(Comparator.comparing(Line::angle).reversed());
+					Line lineB = centrelines.get(j);
 
-				for(Line line : centrelines) Imgproc.line(frame, line.getStart(), line.getEnd(), CYAN, 2, Imgproc.LINE_AA, 0);
+					Point intersection = Line.intersection(lineA, lineB);
 
-				for(int i = 0; i < centrelines.size(); i++){
+					if(intersection != null){
 
-					Line lineA = centrelines.get(i);
+						intersections.add(intersection);
 
-					List<Point> intersections = new ArrayList<>();
+						if(j >= i){ // Ignore intersections with lines that have already been processed
 
-					for(int j = 0; j < centrelines.size(); j++){
+							// Sorting by angle earlier seems to mean line B always has the smaller angle
+							double startAngle = lineB.angle();
+							double endAngle = lineA.angle();
+							double angle = endAngle - startAngle;
 
-						Line lineB = centrelines.get(j);
-
-						Point intersection = Line.intersection(lineA, lineB);
-
-						if(intersection != null){
-
-							intersections.add(intersection);
-
-							if(j >= i){ // Ignore intersections with lines that have already been processed
-
-								// Sorting by angle earlier seems to mean line B always has the smaller angle
-								double startAngle = lineB.angle();
-								double endAngle = lineA.angle();
-								double angle = endAngle - startAngle;
-
-								if(angle > Math.PI / 2){
-									double prevStartAngle = startAngle;
-									startAngle = endAngle - Math.PI;
-									endAngle = prevStartAngle;
-									angle = endAngle - startAngle;
-								}
-
-								double midAngle = (startAngle + endAngle) / 2; // Should be fine since centrelines are rectified
-
-								Imgproc.drawMarker(frame, intersection, Utils.YELLOW, Imgproc.MARKER_CROSS, 14, 2);
-
-								Imgproc.ellipse(frame, intersection, ELLIPSE_SIZE, 0, Math.toDegrees(startAngle),
-										Math.toDegrees(endAngle), Utils.YELLOW, 2);
-
-								Imgproc.putText(frame, String.format("%.2fdeg", Math.toDegrees(angle)),
-										new Point(intersection.x + ANGLE_RADIUS * Math.cos(midAngle),
-												intersection.y + ANGLE_RADIUS * Math.sin(midAngle) + 10),
-										Core.FONT_HERSHEY_PLAIN, 2, Utils.YELLOW, 2);
+							if(angle > Math.PI / 2){
+								double prevStartAngle = startAngle;
+								startAngle = endAngle - Math.PI;
+								endAngle = prevStartAngle;
+								angle = endAngle - startAngle;
 							}
+
+							double midAngle = (startAngle + endAngle) / 2; // Should be fine since centrelines are rectified
+
+							Imgproc.drawMarker(frame, intersection, Utils.YELLOW, Imgproc.MARKER_CROSS, 14, 2);
+
+							Imgproc.ellipse(frame, intersection, ELLIPSE_SIZE, 0, Math.toDegrees(startAngle),
+									Math.toDegrees(endAngle), Utils.YELLOW, 2);
+
+							Imgproc.putText(frame, String.format("%.2fdeg", Math.toDegrees(angle)),
+									new Point(intersection.x + ANGLE_RADIUS * Math.cos(midAngle),
+											intersection.y + ANGLE_RADIUS * Math.sin(midAngle) + 10),
+									Core.FONT_HERSHEY_PLAIN, 2, Utils.YELLOW, 2);
 						}
 					}
-
-					if(Math.abs(lineA.gradient()) > 1){
-						intersections.sort(Comparator.comparingDouble(p -> p.y));
-					}else{
-						intersections.sort(Comparator.comparingDouble(p -> p.x));
-					}
-
-					for(int j = 0; j < intersections.size() - 1; j++){
-						Line segment = new Line(intersections.get(j), intersections.get(j+1));
-						Imgproc.putText(frame, String.format("%.2f", segment.length()), segment.midpoint(),
-								Core.FONT_HERSHEY_PLAIN, 2, Utils.CYAN, 2);
-					}
-
 				}
 
+				if(Math.abs(lineA.gradient()) > 1){
+					intersections.sort(Comparator.comparingDouble(p -> p.y));
+				}else{
+					intersections.sort(Comparator.comparingDouble(p -> p.x));
+				}
+
+				for(int j = 0; j < intersections.size() - 1; j++){
+					Line segment = new Line(intersections.get(j), intersections.get(j + 1));
+					Imgproc.putText(frame, String.format("%.2f", segment.length()), segment.midpoint(),
+							Core.FONT_HERSHEY_PLAIN, 2, Utils.CYAN, 2);
+				}
 			}
 
 			if(showGrid){
-				for(Line line : grid) Imgproc.line(frame, line.getStart(), line.getEnd(), LineDetectorTest.GREEN);
+				for(Line line : grid) Imgproc.line(frame, line.getStart(), line.getEnd(), Utils.GREEN);
 			}
 
 			long frameTime = System.currentTimeMillis() - time;
 			float fps = 1000f/frameTime;
 
-			Imgproc.putText(frame, "Press Esc to close", textPt0, Core.FONT_HERSHEY_PLAIN, 2, GREEN);
-			Imgproc.putText(frame, String.format("%.2f fps", fps), textPt1, Core.FONT_HERSHEY_PLAIN, 2, GREEN);
-			Imgproc.putText(frame, String.format("Edges %s (E to toggle)", displayEdges ? "on" : "off"), textPt2, Core.FONT_HERSHEY_PLAIN, 2, displayEdges ? GREEN : RED);
-			Imgproc.putText(frame, String.format("Lines %s (L to toggle)", displayLines ? "on" : "off"), textPt3, Core.FONT_HERSHEY_PLAIN, 2, displayLines ? GREEN : RED);
-			Imgproc.putText(frame, String.format("Mirror %s (M to toggle)", mirror ? "on" : "off"), textPt4, Core.FONT_HERSHEY_PLAIN, 2, mirror ? GREEN : RED);
-			Imgproc.putText(frame, String.format("Grid %s (G to toggle)", showGrid ? "on" : "off"), textPt5, Core.FONT_HERSHEY_PLAIN, 2, showGrid ? GREEN : RED);
-			Imgproc.putText(frame, String.format("Distortion Correction %s (C to toggle)", correction ? "on" : "off"), textPt6, Core.FONT_HERSHEY_PLAIN, 2, correction ? GREEN : RED);
+			Imgproc.putText(frame, "Press Esc to close", textPt0, Core.FONT_HERSHEY_PLAIN, 2, Utils.GREEN);
+			Imgproc.putText(frame, String.format("%.2f fps", fps), textPt1, Core.FONT_HERSHEY_PLAIN, 2, Utils.GREEN);
+			Imgproc.putText(frame, String.format("Edges %s (E to toggle)", displayEdges ? "on" : "off"), textPt2, Core.FONT_HERSHEY_PLAIN, 2, displayEdges ? Utils.GREEN : Utils.RED);
+			Imgproc.putText(frame, String.format("Lines %s (L to toggle)", displayLines ? "on" : "off"), textPt3, Core.FONT_HERSHEY_PLAIN, 2, displayLines ? Utils.GREEN : Utils.RED);
+			Imgproc.putText(frame, String.format("Mirror %s (M to toggle)", mirror ? "on" : "off"), textPt4, Core.FONT_HERSHEY_PLAIN, 2, mirror ? Utils.GREEN : Utils.RED);
+			Imgproc.putText(frame, String.format("Grid %s (G to toggle)", showGrid ? "on" : "off"), textPt5, Core.FONT_HERSHEY_PLAIN, 2, showGrid ? Utils.GREEN : Utils.RED);
+			Imgproc.putText(frame, String.format("Distortion Correction %s (C to toggle)", correction ? "on" : "off"), textPt6, Core.FONT_HERSHEY_PLAIN, 2, correction ? Utils.GREEN : Utils.RED);
 
 			HighGui.imshow(WINDOW_NAME, frame);
 
@@ -257,7 +268,7 @@ public class LineDetectorTest {
 			double[] l = lineMatrix.get(i, 0);
 			// Discard lines that are on the edge of the frame, we don't want to detect the edge
 			if(l[0] < border && l[2] < border || l[0] > source.width() - border && l[2] > source.width() - border
-			|| l[1] < border && l[3] < border || l[1] > source.height() - border && l[3] > source.height() - border)
+					|| l[1] < border && l[3] < border || l[1] > source.height() - border && l[3] > source.height() - border)
 				continue;
 			// Create the line, add to the list and draw it
 			Line line = new Line(l[0], l[1], l[2], l[3]);

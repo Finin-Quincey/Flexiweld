@@ -47,7 +47,7 @@ public class Calibrator {
 
 			frame = Utils.process(frame, (s, d) -> Imgproc.undistort(s, d, cameraMatrix, distCoeffs));
 
-			for(Line line : grid) Imgproc.line(frame, line.getStart(), line.getEnd(), LineDetectorTest.GREEN);
+			for(Line line : grid) Imgproc.line(frame, line.getStart(), line.getEnd(), Utils.GREEN);
 
 			HighGui.imshow(WINDOW_NAME, frame);
 			HighGui.waitKey(5);
