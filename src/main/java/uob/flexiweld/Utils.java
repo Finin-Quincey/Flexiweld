@@ -7,10 +7,11 @@ import org.opencv.core.Size;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.function.BiConsumer;
 
 /**
- * Static utility class for various helper methods.
+ * Static utility class for various helper methods and constants.
  * @author Finin Quincey
  */
 public final class Utils {
@@ -107,6 +108,32 @@ public final class Utils {
 		Collection<E> result = new ArrayList<>();
 		collection.forEach(result::addAll);
 		return Collections.unmodifiableCollection(result);
+	}
+
+	/**
+	 * Detects pairs of (approximately) parallel lines that are less than the specified width apart and returns a list
+	 * of lines equidistant from both lines of each pair.
+	 * @param lines A list of {@link Line} objects to find centrelines for (will not be modified by this method)
+	 * @param widthThreshold The maximum distance between pairs of lines for a centreline to be detected
+	 * @param angleThreshold The maximum angle between pairs of lines for a centreline to be detected
+	 * @return The resulting list of centrelines
+	 */
+	static List<Line> findCentrelines(List<Line> lines, double widthThreshold, double angleThreshold){
+
+		List<Line> centrelines = new ArrayList<>();
+
+		for(int i=0; i<lines.size(); i++){
+
+			Line lineA = lines.get(i);
+			Line lineB = lines.get((i+1) % lines.size());
+
+			if(lineA.distanceTo(lineB.midpoint()) < widthThreshold && Line.acuteAngleBetween(lineA, lineB) < angleThreshold){
+				Line centreline = Line.equidistant(lineA, lineB).extended(0.25f);
+				centrelines.add(centreline);
+			}
+		}
+
+		return centrelines;
 	}
 
 }
