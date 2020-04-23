@@ -11,6 +11,11 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
+/**
+ * Main test class for the first stage of proof-of-concept development. This implements a linear calibration ->
+ * alignment -> measurement sequence, along with a basic set of controls for toggling various processing steps.
+ * @author Finin Quincey
+ */
 public class LineDetectorTest {
 
 	public static final int CAMERA_NUMBER = 0;
@@ -20,19 +25,13 @@ public class LineDetectorTest {
 
 	/** Lines within this angle of each other are considered parallel */
 	public static final double ANGLE_THRESHOLD = Math.toRadians(10);
-	/** Parallel lines within this distance of each other are considered coincident */
-	public static final double DISTANCE_THRESHOLD = 10;
+//	/** Parallel lines within this distance of each other are considered coincident */
+//	public static final double DISTANCE_THRESHOLD = 10;
 	/** Pairs of parallel, non-coincident lines within this distance of each other are considered to be tubes */
 	public static final double WIDTH_THRESHOLD = 200; // Excludes e.g. the edges of the test card
 
-	public static final int BORDER = 150;
-
 	public static final double ANGLE_RADIUS = 60;
 	private static final Size ELLIPSE_SIZE = new Size(ANGLE_RADIUS - 10, ANGLE_RADIUS - 10);
-
-	public static final int INTERP_FRAMES = 5; // Number of frames to average over for tube detection
-
-	private static final List<List<Line>> prevLines = new ArrayList<>();
 
 	public static void main(String[] args){
 
@@ -45,7 +44,6 @@ public class LineDetectorTest {
 		System.out.println(vc.isOpened() ? "Video capture opened successfully" : "Failed to open video capture");
 
 		Mat frame = new Mat();
-		Mat edges;
 
 		// Calibrator output matrices
 		Mat cameraMatrix = new Mat(3, 3, CvType.CV_32F);
@@ -78,7 +76,7 @@ public class LineDetectorTest {
 		final Point textPt4 = new Point(10, newHeight - 10);
 		final Point textPt5 = new Point(newWidth/2f, newHeight - 70);
 		final Point textPt6 = new Point(newWidth/2f, newHeight - 40);
-		final Point textPt7 = new Point(newWidth/2f, newHeight - 10);
+		//final Point textPt7 = new Point(newWidth/2f, newHeight - 10);
 
 		Line[] grid = Utils.generateGrid(9, 12, size);
 
@@ -96,6 +94,10 @@ public class LineDetectorTest {
 
 		LineTracker tracker = new LineTracker(5);
 
+		// === Background line removal test code ===
+		// (This kind of works, but of course it sometimes excludes foreground lines that happen to coincide with one
+		// of the background ones... not ideal!)
+
 //		for(int i=0; i<20; i++){
 //			tracker.processNextFrame(frame);
 //			vc.read(frame);
@@ -109,6 +111,8 @@ public class LineDetectorTest {
 //		HighGui.waitKey(2000);
 //
 //		tracker = new LineTracker(5); // Reinitialise to prevent any previous lines from carrying over
+
+		// =========================================
 
 		while(HighGui.n_closed_windows == 0){
 

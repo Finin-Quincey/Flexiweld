@@ -12,6 +12,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Class containing various calibration functions. This class can be run on its own to test the calibration sequence
+ * separately.
+ * @author Finin Quincey
+ */
 public class Calibrator {
 
 	public static final int CAMERA_NUMBER = 0;
@@ -72,7 +77,7 @@ public class Calibrator {
 //			}
 //		}
 
-		// Re project corners of last checkerboard to verify
+		// Re-project corners of last checkerboard to verify
 		MatOfPoint2f imagePts = new MatOfPoint2f();
 		MatOfPoint3f worldPts = new MatOfPoint3f();
 		worldPts.push_back(new MatOfPoint3f(new Point3(0, 0, 0)));

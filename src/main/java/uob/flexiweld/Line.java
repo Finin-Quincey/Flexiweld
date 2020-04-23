@@ -193,6 +193,7 @@ public class Line {
 		// https://en.wikipedia.org/wiki/Line%E2%80%93line_intersection#Given_two_points_on_each_line
 		// https://stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect
 
+		// Non-parameteric version (better for infinite lines)
 //		double dy1 = l.end.y - l.start.y;
 //		double dx1 = l.end.x - l.start.x;
 //		double c1 = dy1 * l.start.x - dx1 * l.start.y;
@@ -205,7 +206,7 @@ public class Line {
 //		if(det == 0) return null;
 //		return new Point((dx1 * c2 - dx2 * c1) / det, (dy1 * c2 - dy2 * c1) / det);
 
-		// Parametric version
+		// Parametric version (better for lines of finite length)
 		double dy1 = l.end.y - l.start.y;
 		double dx1 = l.end.x - l.start.x;
 
@@ -228,6 +229,8 @@ public class Line {
 
 		return new Point(l.start.x + t * dx1, l.start.y + t * dy1);
 
+		// Old simultaneous equations (linear algebra) version
+
 		// Standard linear algebra should be avoided because it is tied to the coordinate system, so vertical and
 		// near-vertical lines must be accounted for separately to avoid doubles overflowing to infinity
 		// https://stackoverflow.com/questions/4543506/algorithm-for-intersection-of-2-lines
@@ -249,7 +252,7 @@ public class Line {
 //		return new Point(x, y);
 
 		// I did figure out a third way of doing it using trig, it's probably horribly inefficient but it avoids
-		// issues with infinity by working with angles instead of gradients
+		// issues with infinity by working with angles instead of gradients, which is kinda neat
 
 	}
 
