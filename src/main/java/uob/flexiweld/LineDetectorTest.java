@@ -49,11 +49,13 @@ public class LineDetectorTest {
 
 		// Calibrator output matrices
 		Mat cameraMatrix = new Mat(3, 3, CvType.CV_32F);
-		Mat distCoeffs = new Mat(1, 4, CvType.CV_32F);
+		MatOfDouble distCoeffs = new MatOfDouble(new Mat(1, 4, CvType.CV_64F));
 		List<Mat> rvecs = new ArrayList<>();
 		List<Mat> tvecs = new ArrayList<>();
 
-		//Calibrator.runCalibrationSequence(vc, cameraMatrix, distCoeffs, rvecs, tvecs);
+		Calibrator.runCalibrationSequence(vc, cameraMatrix, distCoeffs, rvecs, tvecs);
+
+		Mat transform = Calibrator.calculateTransformMatrix(cameraMatrix, distCoeffs, rvecs, tvecs);
 
 		vc.read(frame); // Reads in CVType.CV_8UC3
 
@@ -88,9 +90,9 @@ public class LineDetectorTest {
 		long time;
 		boolean displayEdges = false;
 		boolean displayLines = false;
-		boolean mirror = true;
+		boolean mirror = false;
 		boolean showGrid = false;
-		boolean correction = true;
+		boolean correction = false;
 
 		LineTracker tracker = new LineTracker(5);
 
@@ -134,8 +136,8 @@ public class LineDetectorTest {
 //			frame = Utils.process(frame, (s, d) -> Imgproc.cvtColor(s, d, Imgproc.COLOR_GRAY2BGR)); // Greyscale
 //			//frame = foreground;
 
-			//if(correction) frame = Utils.process(frame, (s, d) -> Imgproc.undistort(s, d, cameraMatrix, distCoeffs)); // Lens correction
-			frame = Utils.process(frame, (s, d) -> Imgproc.resize(s, d, size)); // Resize to fit screen nicely
+			if(correction) frame = Utils.process(frame, (s, d) -> Imgproc.undistort(s, d, cameraMatrix, distCoeffs)); // Lens correction
+			//frame = Utils.process(frame, (s, d) -> Imgproc.resize(s, d, size)); // Resize to fit screen nicely
 			if(mirror) frame = Utils.process(frame, (s, d) -> Imgproc.remap(s, d, mapX, mapY, Imgproc.INTER_LINEAR));
 
 			tracker.edges(displayEdges);
@@ -205,9 +207,19 @@ public class LineDetectorTest {
 					intersections.sort(Comparator.comparingDouble(p -> p.x));
 				}
 
+				MatOfPoint2f dst = new MatOfPoint2f();
+				try{
+					Core.perspectiveTransform(new MatOfPoint2f(intersections.toArray(new Point[0])), dst, transform);
+				}catch(CvException e){
+					// Shut the hell up OpenCV, there's nothing wrong with my code
+				}
+
+				List<Point> transformedInts = dst.toList();
+
 				for(int j = 0; j < intersections.size() - 1; j++){
 					Line segment = new Line(intersections.get(j), intersections.get(j + 1));
-					Imgproc.putText(frame, String.format("%.2f", segment.length()), segment.midpoint(),
+					Line actual = new Line(transformedInts.get(j), transformedInts.get(j + 1));
+					Imgproc.putText(frame, String.format("%.2fmm", actual.length()), segment.midpoint(),
 							Core.FONT_HERSHEY_PLAIN, 2, Utils.CYAN, 2);
 				}
 			}

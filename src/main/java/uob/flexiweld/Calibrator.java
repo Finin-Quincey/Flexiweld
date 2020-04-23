@@ -4,11 +4,13 @@ import org.opencv.calib3d.Calib3d;
 import org.opencv.core.*;
 import org.opencv.highgui.HighGui;
 import org.opencv.imgproc.Imgproc;
+import org.opencv.utils.Converters;
 import org.opencv.videoio.VideoCapture;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class Calibrator {
 
@@ -31,15 +33,53 @@ public class Calibrator {
 
 		// Output matrices
 		Mat cameraMatrix = new Mat(3, 3, CvType.CV_32F);
-		Mat distCoeffs = new Mat(1, 4, CvType.CV_32F);
+		MatOfDouble distCoeffs = new MatOfDouble(new Mat(1, 4, CvType.CV_64F));
 		List<Mat> rvecs = new ArrayList<>();
 		List<Mat> tvecs = new ArrayList<>();
 
 		Mat frame = new Mat();
 
+		vc.read(frame);
+
 		Line[] grid = Utils.generateGrid(9, 12, new Size(frame.width(), frame.height()));
 
 		runCalibrationSequence(vc, cameraMatrix, distCoeffs, rvecs, tvecs);
+
+//		// Convert rvecs to full rotation matrices
+//		List<Mat> rmats = rvecs.stream().map(m -> Utils.process(m, Calib3d::Rodrigues)).collect(Collectors.toList());
+//
+//		Mat transform = new Mat(3, 4, rmats.get(0).type());
+//		List<Mat> toConcat = new ArrayList<>();
+//		toConcat.add(rmats.get(9));
+//		toConcat.add(tvecs.get(9));
+//		Core.hconcat(toConcat, transform);
+//
+//		List<Point> projectedPoints = new ArrayList<>();
+//
+//		for(int y = 0; y < CHESSBOARD_SIZE.height; ++y){
+//			for(int x = 0; x < CHESSBOARD_SIZE.width; ++x){
+//
+//				Mat worldPt = Mat.zeros(4, 1, transform.type()); // MUST BE THE SAME TYPE!
+//				worldPt.put(0, 0, x * SQUARE_SIZE_MM);
+//				worldPt.put(1, 0, y * SQUARE_SIZE_MM);
+//				worldPt.put(1, 0, 0);
+//				worldPt.put(3, 0, 1);
+//
+//				// Find origin vector in image coordinates (i.e. [u; v; 1])
+//				Mat originProjection = new Mat();
+//				Core.gemm(transform, worldPt, 1, new Mat(), 0, originProjection); // Really intuitive, obvious method name here...
+//				projectedPoints.add(new Point(originProjection.get(0, 0))); // Point doesn't care that this has 3 elements
+//			}
+//		}
+
+		// Re project corners of last checkerboard to verify
+		MatOfPoint2f imagePts = new MatOfPoint2f();
+		MatOfPoint3f worldPts = new MatOfPoint3f();
+		worldPts.push_back(new MatOfPoint3f(new Point3(0, 0, 0)));
+		worldPts.push_back(new MatOfPoint3f(new Point3(0, (CHESSBOARD_SIZE.width - 1) * SQUARE_SIZE_MM, 0)));
+		worldPts.push_back(new MatOfPoint3f(new Point3((CHESSBOARD_SIZE.height - 1) * SQUARE_SIZE_MM, 0, 0)));
+		worldPts.push_back(new MatOfPoint3f(new Point3((CHESSBOARD_SIZE.height - 1) * SQUARE_SIZE_MM, (CHESSBOARD_SIZE.width - 1) * SQUARE_SIZE_MM, 0)));
+		Calib3d.projectPoints(worldPts, rvecs.get(9), tvecs.get(9), cameraMatrix, distCoeffs, imagePts);
 
 		while(HighGui.n_closed_windows == 0){
 
@@ -47,9 +87,12 @@ public class Calibrator {
 
 			frame = Utils.process(frame, (s, d) -> Imgproc.undistort(s, d, cameraMatrix, distCoeffs));
 
-			for(Line line : grid) Imgproc.line(frame, line.getStart(), line.getEnd(), Utils.GREEN);
+			//for(Line line : grid) Imgproc.line(frame, line.getStart(), line.getEnd(), Utils.GREEN);
+
+			for(Point point : imagePts.toList()) Imgproc.drawMarker(frame, point, Utils.YELLOW);
 
 			HighGui.imshow(WINDOW_NAME, frame);
+			if(HighGui.n_closed_windows > 0) break;
 			HighGui.waitKey(5);
 		}
 
@@ -58,9 +101,9 @@ public class Calibrator {
 
 	}
 
-	private static Mat generateChessboardPoints(Size size, float squareSize){
+	private static MatOfPoint3f generateChessboardPoints(Size size, float squareSize){
 
-		Mat points = new MatOfPoint3f();
+		MatOfPoint3f points = new MatOfPoint3f();
 
 		for(int y = 0; y < size.height; ++y){
 			for(int x = 0; x < size.width; ++x){
@@ -70,6 +113,25 @@ public class Calibrator {
 		}
 
 		return points;
+	}
+
+	// TODO: We don't want to account for the distortion here because HLT should be done AFTER undistorting
+	public static Mat calculateTransformMatrix(Mat cameraMatrix, MatOfDouble distCoeffs, List<Mat> rvecs, List<Mat> tvecs){
+
+		MatOfPoint2f imagePts = new MatOfPoint2f();
+		MatOfPoint3f worldPts = new MatOfPoint3f();
+		worldPts.push_back(new MatOfPoint3f(new Point3(0, 0, 0)));
+		worldPts.push_back(new MatOfPoint3f(new Point3(0, (CHESSBOARD_SIZE.width - 1) * SQUARE_SIZE_MM, 0)));
+		worldPts.push_back(new MatOfPoint3f(new Point3((CHESSBOARD_SIZE.height - 1) * SQUARE_SIZE_MM, 0, 0)));
+		worldPts.push_back(new MatOfPoint3f(new Point3((CHESSBOARD_SIZE.height - 1) * SQUARE_SIZE_MM, (CHESSBOARD_SIZE.width - 1) * SQUARE_SIZE_MM, 0)));
+		// This line effectively *simulates* what the camera is doing and turns the world points into image points
+		Calib3d.projectPoints(worldPts, rvecs.get(9), tvecs.get(9), cameraMatrix, distCoeffs, imagePts);
+
+		Mat src = Converters.vector_Point2f_to_Mat(imagePts.toList());
+		Mat dst = Converters.vector_Point2f_to_Mat(worldPts.toList().stream().map(p -> new Point(p.x, p.y)).collect(Collectors.toList()));
+
+		return Imgproc.getPerspectiveTransform(src, dst);
+
 	}
 
 	public static void runCalibrationSequence(VideoCapture vc, Mat cameraMatrix, Mat distCoeffs, List<Mat> rvecs, List<Mat> tvecs){
