@@ -55,7 +55,7 @@ public class LineDetectorTest {
 
 		Calibrator.runCalibrationSequence(vc, cameraMatrix, distCoeffs, rvecs, tvecs);
 
-		Mat transform = Calibrator.calculateTransformMatrix(cameraMatrix, distCoeffs, rvecs, tvecs);
+		Mat transform = Calibrator.calculateTransformMatrix(rvecs.get(9), tvecs.get(9));
 
 		vc.read(frame); // Reads in CVType.CV_8UC3
 
@@ -92,7 +92,7 @@ public class LineDetectorTest {
 		boolean displayLines = false;
 		boolean mirror = false;
 		boolean showGrid = false;
-		boolean correction = false;
+		boolean correction = true;
 
 		LineTracker tracker = new LineTracker(5);
 

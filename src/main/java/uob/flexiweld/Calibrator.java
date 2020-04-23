@@ -115,8 +115,13 @@ public class Calibrator {
 		return points;
 	}
 
-	// TODO: We don't want to account for the distortion here because HLT should be done AFTER undistorting
-	public static Mat calculateTransformMatrix(Mat cameraMatrix, MatOfDouble distCoeffs, List<Mat> rvecs, List<Mat> tvecs){
+	public static Mat calculateTransformMatrix(Mat rvec, Mat tvec){
+
+		// We shouldn't be applying a camera distortion because a 4-point perspective transform can't possibly account
+		// for non-linear effects, and the returned transform is intended for use on undistorted images anyway
+		// Therefore (according to the javadoc for projectPoints) we're using an identity cameraMatrix and zero distortion
+		Mat cameraMatrix = Mat.eye(3, 3, CvType.CV_64F);
+		MatOfDouble distCoeffs = new MatOfDouble(Mat.zeros(1, 5, CvType.CV_64F));
 
 		MatOfPoint2f imagePts = new MatOfPoint2f();
 		MatOfPoint3f worldPts = new MatOfPoint3f();
@@ -125,7 +130,7 @@ public class Calibrator {
 		worldPts.push_back(new MatOfPoint3f(new Point3((CHESSBOARD_SIZE.height - 1) * SQUARE_SIZE_MM, 0, 0)));
 		worldPts.push_back(new MatOfPoint3f(new Point3((CHESSBOARD_SIZE.height - 1) * SQUARE_SIZE_MM, (CHESSBOARD_SIZE.width - 1) * SQUARE_SIZE_MM, 0)));
 		// This line effectively *simulates* what the camera is doing and turns the world points into image points
-		Calib3d.projectPoints(worldPts, rvecs.get(9), tvecs.get(9), cameraMatrix, distCoeffs, imagePts);
+		Calib3d.projectPoints(worldPts, rvec, tvec, cameraMatrix, distCoeffs, imagePts);
 
 		Mat src = Converters.vector_Point2f_to_Mat(imagePts.toList());
 		Mat dst = Converters.vector_Point2f_to_Mat(worldPts.toList().stream().map(p -> new Point(p.x, p.y)).collect(Collectors.toList()));
