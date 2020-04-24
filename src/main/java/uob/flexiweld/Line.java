@@ -193,7 +193,7 @@ public class Line {
 		// https://en.wikipedia.org/wiki/Line%E2%80%93line_intersection#Given_two_points_on_each_line
 		// https://stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect
 
-		// Non-parameteric version (better for infinite lines)
+		// Non-parametric version (better for infinite lines)
 //		double dy1 = l.end.y - l.start.y;
 //		double dx1 = l.end.x - l.start.x;
 //		double c1 = dy1 * l.start.x - dx1 * l.start.y;
