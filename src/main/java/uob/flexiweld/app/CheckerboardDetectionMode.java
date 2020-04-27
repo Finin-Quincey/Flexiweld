@@ -6,7 +6,11 @@ import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
-public abstract class CheckerboardDetectionMode extends CaptureMode {
+import javax.swing.*;
+import java.awt.*;
+import java.util.List;
+
+public abstract class CheckerboardDetectionMode extends LiveMode {
 
 	/** The number of intersections in each direction the checkerboard has (one less than the number of squares). */
 	protected final Size checkerboardSize;
@@ -16,6 +20,8 @@ public abstract class CheckerboardDetectionMode extends CaptureMode {
 	private Mat greyscaleFrame;
 	private MatOfPoint2f corners;
 	private boolean foundCheckerboard;
+
+	JLabel patternDetectedReadout;
 
 	public CheckerboardDetectionMode(String name, Size checkerboardSize, double squareSize){
 		super(name);
@@ -30,6 +36,12 @@ public abstract class CheckerboardDetectionMode extends CaptureMode {
 	}
 
 	@Override
+	public void populateStatusBar(List<Component> components){
+		super.populateStatusBar(components);
+		patternDetectedReadout = FlexiweldApp.addErrorText("Unable to detect checkerboard", components);
+	}
+
+	@Override
 	public Mat processFrame(VideoFeed videoFeed, Mat raw){
 
 		// findChessboardCorners works best with a greyscale image
@@ -41,11 +53,14 @@ public abstract class CheckerboardDetectionMode extends CaptureMode {
 
 		if(foundCheckerboard){
 			Calib3d.drawChessboardCorners(raw, checkerboardSize, corners, true);
+			patternDetectedReadout.setText(FlexiweldApp.CHECK_MARK + "Found checkerboard");
+			patternDetectedReadout.setForeground(FlexiweldApp.CONFIRM_TEXT_COLOUR);
 		}else{
-
+			patternDetectedReadout.setText(FlexiweldApp.CROSS_SYMBOL + "No checkerboard detected");
+			patternDetectedReadout.setForeground(FlexiweldApp.ERROR_TEXT_COLOUR);
 		}
 
-		return raw;
+		return super.processFrame(videoFeed, raw);
 
 	}
 

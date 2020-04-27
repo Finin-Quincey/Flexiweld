@@ -10,6 +10,8 @@ import org.opencv.videoio.VideoCapture;
 import uob.flexiweld.Utils;
 
 import java.awt.*;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * The main class that deals with the actual video feed. This class forms the boundary between the high-level Swing UI
@@ -21,8 +23,9 @@ import java.awt.*;
  *
  * @author Finin Quincey
  */
-// N.B. If we're getting technical, this is the *context* part of a *state pattern*.
 public class VideoFeed {
+
+	private static final int FPS_AVERAGE_WINDOW = 10;
 
 	private final int cameraNumber;
 
@@ -36,14 +39,34 @@ public class VideoFeed {
 
 	/** OpenCV can't be trusted to keep track of this properly so I'm doing it myself! */
 	private boolean running;
+	/** Keeps track of whether the video feed is paused or not. Pausing the video feed does not release the camera, it
+	 * just stops overwriting {@link VideoFeed#raw} on update (and the processing still gets run). */
+	private boolean paused;
 
-	private float fps;
-
-	private CaptureMode mode;
+	/** Keeps track of the frames per second over the last 10 frames, for a moving average. */
+	private final List<Double> recentFps = new ArrayList<>(FPS_AVERAGE_WINDOW);
 
 	public VideoFeed(int cameraNumber){
 		this.cameraNumber = cameraNumber;
 		vc = new VideoCapture();
+	}
+
+	/**
+	 * Returns the output resolution this video feed is set to.
+	 * @see VideoFeed#fit(int, int)
+	 */
+	public Size getOutputSize(){
+		return outputSize;
+	}
+
+	/** Returns the current framerate of the camera. */
+	public double getFps(){
+		return recentFps.stream().mapToDouble(d -> d).average().orElse(0);
+	}
+
+	/** Returns true if this video feed is running, false otherwise. */
+	public boolean isRunning(){
+		return vc.isOpened() && running;
 	}
 
 	/**
@@ -67,8 +90,6 @@ public class VideoFeed {
 		if(!vc.read(raw)) return false; // For some strange reason open can succeed when the camera is busy...
 		cameraResolution = raw.size();
 
-		mode = new CalibrationMode(new Size(9, 6), 25);
-
 		running = true;
 		return true;
 	}
@@ -80,34 +101,30 @@ public class VideoFeed {
 		running = false;
 	}
 
-	/** Returns true if this video feed is running, false otherwise. */
-	public boolean isRunning(){
-		return vc.isOpened() && running;
+	/** Toggles whether the video feed is paused. Pausing the video feed does not release the camera, it just freezes
+	 * the video so new frames are not captured (the rest of the frame processing still gets run, using the last frame
+	 * that was captured). */
+	public void togglePause(){
+		paused = !paused;
+	}
+
+	/** Returns whether the video feed is currently paused. */
+	public boolean isPaused(){
+		return paused;
 	}
 
 	/**
 	 * Adjusts the output resolution of this video feed to fit the given dimensions.
 	 * @param width The maximum width to fit the output to
 	 * @param height The maximum height to fit the output to
+	 * @throws IllegalStateException if the camera is not currently opened
 	 */
 	public void fit(int width, int height){
+		if(!isRunning()) throw new IllegalStateException("Video feed not running!");
 		double scaleFactor = Math.min(width/cameraResolution.width, height/cameraResolution.height);
 		int newWidth = (int)(cameraResolution.width * scaleFactor);
 		int newHeight = (int)(cameraResolution.height * scaleFactor);
 		outputSize = new Size(newWidth, newHeight);
-	}
-
-	/**
-	 * Returns the output resolution this video feed is set to.
-	 * @see VideoFeed#fit(int, int)
-	 */
-	public Size getOutputSize(){
-		return outputSize;
-	}
-
-	/** Returns the current framerate of the camera. */
-	public float getFps(){
-		return fps;
 	}
 
 	/**
@@ -117,11 +134,13 @@ public class VideoFeed {
 	 * annotations added.
 	 * @throws IllegalStateException if the camera is not currently opened
 	 */
-	public Image update(){
-
-		long time = System.currentTimeMillis();
+	public Image update(CaptureMode mode){
 
 		if(!isRunning()) throw new IllegalStateException("Video feed not running!");
+
+		if(paused) return HighGui.toBufferedImage(out);
+
+		long time = System.currentTimeMillis();
 
 		vc.read(raw);
 
@@ -131,7 +150,8 @@ public class VideoFeed {
 		out = Utils.process(out, (s, d) -> Core.flip(s, d, 1));
 		out = Utils.process(out, (s, d) -> Imgproc.resize(s, d, outputSize));
 
-		fps = 1000f / (System.currentTimeMillis() - time);
+		recentFps.add(1000d / (System.currentTimeMillis() - time));
+		if(recentFps.size() > FPS_AVERAGE_WINDOW) recentFps.remove(0);
 
 		return HighGui.toBufferedImage(out);
 
