@@ -3,6 +3,7 @@ package uob.flexiweld;
 import org.opencv.core.Mat;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
+import uob.flexiweld.geom.Line;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -118,7 +119,7 @@ public final class Utils {
 	 * @param angleThreshold The maximum angle between pairs of lines for a centreline to be detected
 	 * @return The resulting list of centrelines
 	 */
-	static List<Line> findCentrelines(List<Line> lines, double widthThreshold, double angleThreshold){
+	public static List<Line> findCentrelines(List<Line> lines, double widthThreshold, double angleThreshold){
 
 		List<Line> centrelines = new ArrayList<>();
 

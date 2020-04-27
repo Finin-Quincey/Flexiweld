@@ -1,4 +1,4 @@
-package uob.flexiweld;
+package uob.flexiweld.geom;
 
 import org.opencv.core.Point;
 

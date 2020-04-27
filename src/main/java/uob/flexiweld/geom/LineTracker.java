@@ -1,8 +1,9 @@
-package uob.flexiweld;
+package uob.flexiweld.geom;
 
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
 import org.opencv.imgproc.Imgproc;
+import uob.flexiweld.Utils;
 
 import java.util.ArrayList;
 import java.util.Collections;
