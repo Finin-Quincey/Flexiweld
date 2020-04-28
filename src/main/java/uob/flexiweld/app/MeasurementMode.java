@@ -11,9 +11,9 @@ import java.util.List;
 
 public class MeasurementMode extends LiveMode {
 
-	final Mat cameraMatrix;
-	final MatOfDouble distCoeffs;
-	final Mat alignmentMatrix;
+	private final Mat cameraMatrix;
+	private final MatOfDouble distCoeffs;
+	private final Mat alignmentMatrix;
 
 	public MeasurementMode(){
 		this(null, null, null);
@@ -48,7 +48,7 @@ public class MeasurementMode extends LiveMode {
 
 	private void prepareAlignment(FlexiweldApp app){
 		// TODO: Dialogue box that prompts the user for the alignment parameters below
-		app.setMode(new AlignmentMode(new Size(9, 6), 25.5));
+		app.setMode(new AlignmentMode(new Size(9, 6), 25.5, cameraMatrix, distCoeffs, alignmentMatrix));
 	}
 
 	@Override
@@ -72,7 +72,7 @@ public class MeasurementMode extends LiveMode {
 	@Override
 	public Mat processFrame(VideoFeed videoFeed, Mat raw){
 
-		raw = super.processFrame(videoFeed, raw); // Good practice to call this before the rest, for consistency
+		raw = super.processFrame(videoFeed, raw);
 
 		if(isCalibrated()){
 			raw = Utils.process(raw, (s, d) -> Imgproc.undistort(s, d, cameraMatrix, distCoeffs)); // Lens correction
