@@ -1,8 +1,6 @@
 package uob.flexiweld;
 
-import org.opencv.core.Mat;
-import org.opencv.core.Scalar;
-import org.opencv.core.Size;
+import org.opencv.core.*;
 import uob.flexiweld.geom.Line;
 
 import java.util.ArrayList;
@@ -135,6 +133,20 @@ public final class Utils {
 		}
 
 		return centrelines;
+	}
+
+	public static MatOfPoint3f generateChessboardPoints(Size size, double squareSize){
+
+		MatOfPoint3f points = new MatOfPoint3f();
+
+		for(int y = 0; y < size.height; ++y){
+			for(int x = 0; x < size.width; ++x){
+				// A bit unintuitive but hey, we got there in the end!
+				points.push_back(new MatOfPoint3f(new Point3(y * squareSize, x * squareSize, 0)));
+			}
+		}
+
+		return points;
 	}
 
 }

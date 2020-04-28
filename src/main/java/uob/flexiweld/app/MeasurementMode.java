@@ -3,6 +3,8 @@ package uob.flexiweld.app;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfDouble;
 import org.opencv.core.Size;
+import org.opencv.imgproc.Imgproc;
+import uob.flexiweld.Utils;
 
 import java.awt.*;
 import java.util.List;
@@ -41,7 +43,7 @@ public class MeasurementMode extends LiveMode {
 
 	private void prepareCalibration(FlexiweldApp app){
 		// TODO: Dialogue box that prompts the user for the calibration parameters below
-		app.setMode(new CalibrationMode(new Size(9, 6), 25.5));
+		app.setMode(new CalibrationMode(new Size(9, 6), 25.5, this));
 	}
 
 	private void prepareAlignment(FlexiweldApp app){
@@ -69,7 +71,14 @@ public class MeasurementMode extends LiveMode {
 
 	@Override
 	public Mat processFrame(VideoFeed videoFeed, Mat raw){
-		return super.processFrame(videoFeed, raw);
+
+		raw = super.processFrame(videoFeed, raw); // Good practice to call this before the rest, for consistency
+
+		if(isCalibrated()){
+			raw = Utils.process(raw, (s, d) -> Imgproc.undistort(s, d, cameraMatrix, distCoeffs)); // Lens correction
+		}
+
+		return raw;
 	}
 
 }

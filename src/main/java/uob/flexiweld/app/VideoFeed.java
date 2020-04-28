@@ -7,6 +7,7 @@ import org.opencv.core.Size;
 import org.opencv.highgui.HighGui;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.videoio.VideoCapture;
+import org.opencv.videoio.Videoio;
 import uob.flexiweld.Utils;
 
 import java.awt.*;
@@ -33,7 +34,9 @@ public class VideoFeed {
 	private Mat raw;
 	private Mat out;
 
+	// Camera properties
 	private Size cameraResolution;
+	private double maxFps;
 
 	private Size outputSize;
 
@@ -42,6 +45,8 @@ public class VideoFeed {
 	/** Keeps track of whether the video feed is paused or not. Pausing the video feed does not release the camera, it
 	 * just stops overwriting {@link VideoFeed#raw} on update (and the processing still gets run). */
 	private boolean paused;
+	/** Keeps track of when the video feed should resume. This is zero if the feed is running or paused indefinitely. */
+	private long resumeTime;
 
 	/** Keeps track of the frames per second over the last 10 frames, for a moving average. */
 	private final List<Double> recentFps = new ArrayList<>(FPS_AVERAGE_WINDOW);
@@ -49,6 +54,11 @@ public class VideoFeed {
 	public VideoFeed(int cameraNumber){
 		this.cameraNumber = cameraNumber;
 		vc = new VideoCapture();
+	}
+
+	/** Returns the resolution of the camera this video feed has open. */
+	public Size getCameraResolution(){
+		return cameraResolution;
 	}
 
 	/**
@@ -59,14 +69,19 @@ public class VideoFeed {
 		return outputSize;
 	}
 
-	/** Returns the current framerate of the camera. */
+	/** Returns the current framerate of the camera, capped to the camera's maximum framerate. */
 	public double getFps(){
-		return recentFps.stream().mapToDouble(d -> d).average().orElse(0);
+		return Math.min(recentFps.stream().mapToDouble(d -> d).average().orElse(0), maxFps);
 	}
 
 	/** Returns true if this video feed is running, false otherwise. */
 	public boolean isRunning(){
 		return vc.isOpened() && running;
+	}
+
+	/** Returns the current output frame, after processing and annotations. */
+	public Mat getCurrentFrame(){
+		return out;
 	}
 
 	/**
@@ -89,6 +104,7 @@ public class VideoFeed {
 
 		if(!vc.read(raw)) return false; // For some strange reason open can succeed when the camera is busy...
 		cameraResolution = raw.size();
+		maxFps = vc.get(Videoio.CAP_PROP_FPS);
 
 		running = true;
 		return true;
@@ -106,6 +122,13 @@ public class VideoFeed {
 	 * that was captured). */
 	public void togglePause(){
 		paused = !paused;
+	}
+
+	/** Pauses the video feed for the given number of milliseconds. */
+	public void pauseFor(int milliseconds){
+		if(paused) return; // Ignore if it's already paused
+		resumeTime = System.currentTimeMillis() + milliseconds;
+		paused = true;
 	}
 
 	/** Returns whether the video feed is currently paused. */
@@ -138,9 +161,15 @@ public class VideoFeed {
 
 		if(!isRunning()) throw new IllegalStateException("Video feed not running!");
 
-		if(paused) return HighGui.toBufferedImage(out);
-
 		long time = System.currentTimeMillis();
+
+		if(paused){
+			if(resumeTime > 0 && time > resumeTime){
+				paused = false;
+				resumeTime = 0;
+			}
+			return HighGui.toBufferedImage(out);
+		}
 
 		vc.read(raw);
 

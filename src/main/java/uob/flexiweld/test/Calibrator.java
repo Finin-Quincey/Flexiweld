@@ -108,20 +108,6 @@ public class Calibrator {
 
 	}
 
-	private static MatOfPoint3f generateChessboardPoints(Size size, float squareSize){
-
-		MatOfPoint3f points = new MatOfPoint3f();
-
-		for(int y = 0; y < size.height; ++y){
-			for(int x = 0; x < size.width; ++x){
-				// A bit unintuitive but hey, we got there in the end!
-				points.push_back(new MatOfPoint3f(new Point3(y * squareSize, x * squareSize, 0)));
-			}
-		}
-
-		return points;
-	}
-
 	public static Mat calculateTransformMatrix(Mat rvec, Mat tvec){
 
 		// We shouldn't be applying a camera distortion because a 4-point perspective transform can't possibly account
@@ -136,7 +122,7 @@ public class Calibrator {
 		worldPts.push_back(new MatOfPoint3f(new Point3(0, (CHESSBOARD_SIZE.width - 1) * SQUARE_SIZE_MM, 0)));
 		worldPts.push_back(new MatOfPoint3f(new Point3((CHESSBOARD_SIZE.height - 1) * SQUARE_SIZE_MM, 0, 0)));
 		worldPts.push_back(new MatOfPoint3f(new Point3((CHESSBOARD_SIZE.height - 1) * SQUARE_SIZE_MM, (CHESSBOARD_SIZE.width - 1) * SQUARE_SIZE_MM, 0)));
-		// This line effectively *simulates* what the camera is doing and turns the world points into image points
+		// This line effectively *simulates* what the camera is doing and turns the four world points into image points
 		Calib3d.projectPoints(worldPts, rvec, tvec, cameraMatrix, distCoeffs, imagePts);
 
 		Mat src = Converters.vector_Point2f_to_Mat(imagePts.toList());
@@ -148,7 +134,7 @@ public class Calibrator {
 
 	public static void runCalibrationSequence(VideoCapture vc, Mat cameraMatrix, Mat distCoeffs, List<Mat> rvecs, List<Mat> tvecs){
 
-		List<Mat> objectPoints = Collections.nCopies(CALIBRATION_IMAGES, generateChessboardPoints(CHESSBOARD_SIZE, SQUARE_SIZE_MM));
+		List<Mat> objectPoints = Collections.nCopies(CALIBRATION_IMAGES, Utils.generateChessboardPoints(CHESSBOARD_SIZE, SQUARE_SIZE_MM));
 		List<Mat> imagePoints = new ArrayList<>();
 
 		Mat frame = new Mat();

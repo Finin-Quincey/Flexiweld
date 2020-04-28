@@ -35,10 +35,14 @@ public abstract class CheckerboardDetectionMode extends LiveMode {
 		return foundCheckerboard;
 	}
 
+	public MatOfPoint2f getCorners(){
+		return corners;
+	}
+
 	@Override
 	public void populateStatusBar(List<Component> components){
 		super.populateStatusBar(components);
-		patternDetectedReadout = FlexiweldApp.addErrorText("Unable to detect checkerboard", components);
+		patternDetectedReadout = FlexiweldApp.addErrorText("No checkerboard detected", components);
 	}
 
 	@Override

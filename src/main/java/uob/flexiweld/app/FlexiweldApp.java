@@ -40,6 +40,7 @@ public class FlexiweldApp {
 	public static final String CROSS_SYMBOL = "\u274c ";
 
 	public static final int STATUS_TEXT_SPACING = 30;
+	public static final int CONTROL_PANEL_WIDTH = 200;
 
 	/** The {@link VideoFeed} object that controls the connection to the camera and the main processing sequence. */
 	private final VideoFeed videoFeed;
@@ -122,7 +123,7 @@ public class FlexiweldApp {
 		try{
 			if(inputStream != null){
 				BufferedImage logo = ImageIO.read(inputStream);
-				Image logoScaled = logo.getScaledInstance(180, logo.getHeight() * 180/logo.getWidth(), Image.SCALE_SMOOTH);
+				Image logoScaled = logo.getScaledInstance(CONTROL_PANEL_WIDTH, logo.getHeight() * CONTROL_PANEL_WIDTH/logo.getWidth(), Image.SCALE_SMOOTH);
 				JLabel logoLabel = new JLabel(new ImageIcon(logoScaled));
 				controlPanel.add(logoLabel, BorderLayout.NORTH);
 			}
@@ -133,7 +134,7 @@ public class FlexiweldApp {
 		controls = new JPanel();
 		controls.setLayout(new GridLayout(12, 1, 5, 5));
 		controls.setBackground(CONTROLS_BG_COLOUR);
-		controls.setPreferredSize(new Dimension(180, 0)); // Height is irrelevant
+		controls.setPreferredSize(new Dimension(CONTROL_PANEL_WIDTH, 0)); // Height is irrelevant
 		controls.setBorder(BorderFactory.createLineBorder(CONTROLS_BG_COLOUR, 5));
 
 //		for(String font : GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames()){
@@ -165,6 +166,8 @@ public class FlexiweldApp {
 
 		statusBar.removeAll();
 
+		statusBar.add(Box.createHorizontalStrut(5));
+
 		// Use a list so modes can't modify the status bar itself
 		List<Component> components = new ArrayList<>();
 		mode.populateStatusBar(components);
@@ -179,6 +182,11 @@ public class FlexiweldApp {
 		List<Component> components = new ArrayList<>();
 		mode.populateControls(this, components);
 		components.forEach(controls::add);
+	}
+
+	/** Returns the app's main {@link JFrame}. */
+	public JFrame getFrame(){
+		return jFrame;
 	}
 
 	/** Returns the app's {@link VideoFeed} instance. */
