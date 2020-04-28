@@ -43,6 +43,8 @@ public abstract class LiveMode extends CaptureMode {
 
 		app.getVideoFeed().pauseFor(1000);
 
+		Mat snapshot = app.getVideoFeed().getCurrentFrame();
+
 		JFileChooser imageExporter = new JFileChooser();
 		FileNameExtensionFilter filter = new FileNameExtensionFilter("JPEG images", "jpg", "jpeg", "jfif");
 		imageExporter.setFileFilter(filter);
@@ -58,7 +60,7 @@ public abstract class LiveMode extends CaptureMode {
 				path = path + ".jpg";
 			}
 
-			Imgcodecs.imwrite(path, app.getVideoFeed().getCurrentFrame());
+			Imgcodecs.imwrite(path, snapshot);
 		}
 	}
 
