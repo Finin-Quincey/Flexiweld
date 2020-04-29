@@ -5,15 +5,26 @@ import org.opencv.core.MatOfDouble;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 import uob.flexiweld.Utils;
+import uob.flexiweld.geom.Line;
+import uob.flexiweld.geom.LineTracker;
 
 import java.awt.*;
+import java.util.Comparator;
 import java.util.List;
 
 public class MeasurementMode extends LiveMode {
 
+	// TODO: Make these configurable
+	/** Lines within this angle of each other are considered parallel */
+	public static final double ANGLE_THRESHOLD = Math.toRadians(10);
+	/** Pairs of parallel, non-coincident lines within this distance of each other are considered to be tubes */
+	public static final double WIDTH_THRESHOLD = 200; // Excludes e.g. the edges of the test card
+
 	private final Mat cameraMatrix;
 	private final MatOfDouble distCoeffs;
 	private final Mat alignmentMatrix;
+
+	private final LineTracker lineTracker;
 
 	public MeasurementMode(){
 		this(null, null, null);
@@ -24,6 +35,7 @@ public class MeasurementMode extends LiveMode {
 		this.cameraMatrix = cameraMatrix;
 		this.distCoeffs = distCoeffs;
 		this.alignmentMatrix = alignmentMatrix;
+		this.lineTracker = new LineTracker(5);
 	}
 
 	public boolean isCalibrated(){
@@ -77,6 +89,15 @@ public class MeasurementMode extends LiveMode {
 		if(isCalibrated()){
 			frame = Utils.process(frame, (s, d) -> Imgproc.undistort(s, d, cameraMatrix, distCoeffs)); // Lens correction
 		}
+
+		List<Line> averagedLines = lineTracker.processNextFrame(frame);
+
+		for(Line line : averagedLines) Imgproc.line(frame, line.getStart(), line.getEnd(), Utils.BLUE, 2, Imgproc.LINE_AA, 0);
+
+		List<Line> centrelines = Utils.findCentrelines(averagedLines, WIDTH_THRESHOLD, ANGLE_THRESHOLD);
+		centrelines.sort(Comparator.comparing(Line::angle).reversed());
+
+		for(Line line : centrelines) Imgproc.line(frame, line.getStart(), line.getEnd(), Utils.CYAN, 2, Imgproc.LINE_AA, 0);
 
 		return frame;
 	}
