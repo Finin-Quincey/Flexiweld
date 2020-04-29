@@ -35,8 +35,13 @@ public abstract class CheckerboardDetectionMode extends LiveMode {
 		return foundCheckerboard;
 	}
 
+	/**
+	 * Returns a copy of the matrix of checkerboard corners detected in the most recent frame (see
+	 * {@link Calib3d#findChessboardCorners(Mat, Size, MatOfPoint2f, int)}). Since the returned matrix is a copy, it
+	 * is local to this method and may be modified externally.
+	 */
 	public MatOfPoint2f getCorners(){
-		return corners;
+		return new MatOfPoint2f(corners.clone()); // This MUST be cloned or it will get overwritten next frame!
 	}
 
 	@Override
@@ -51,6 +56,9 @@ public abstract class CheckerboardDetectionMode extends LiveMode {
 		// findChessboardCorners works best with a greyscale image
 		Imgproc.cvtColor(raw, greyscaleFrame, Imgproc.COLOR_BGR2GRAY);
 
+		// No need to wipe or (worse) re-create the corners matrix every frame since it is more efficient just to let
+		// findChessboardCorners overwrite it every frame - however, this means it MUST be fully encapsulated, see the
+		// comment in getCorners() above
 		foundCheckerboard = Calib3d.findChessboardCorners(greyscaleFrame, checkerboardSize, corners,
 				// Not sure what the flags do, just using the recommended ones for now
 				Calib3d.CALIB_CB_ADAPTIVE_THRESH + Calib3d.CALIB_CB_NORMALIZE_IMAGE + Calib3d.CALIB_CB_FAST_CHECK);
