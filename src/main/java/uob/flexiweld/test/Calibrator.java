@@ -6,8 +6,8 @@ import org.opencv.highgui.HighGui;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.utils.Converters;
 import org.opencv.videoio.VideoCapture;
-import uob.flexiweld.geom.Line;
 import uob.flexiweld.Utils;
+import uob.flexiweld.geom.Line;
 
 import java.util.ArrayList;
 import java.util.Collections;

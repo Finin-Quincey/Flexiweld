@@ -2,7 +2,6 @@ package uob.flexiweld.app;
 
 import org.opencv.core.Mat;
 
-import javax.swing.*;
 import java.awt.*;
 import java.util.List;
 
@@ -18,8 +17,8 @@ public class StandbyMode extends CaptureMode {
 	}
 
 	@Override
-	public Mat processFrame(VideoFeed videoFeed, Mat raw){
-		return raw; // Do nothing (will never be called anyway)
+	public Mat processFrame(VideoFeed videoFeed, Mat frame){
+		return frame; // Do nothing (will never be called anyway)
 	}
 
 }

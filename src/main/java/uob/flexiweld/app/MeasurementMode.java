@@ -70,15 +70,15 @@ public class MeasurementMode extends LiveMode {
 	}
 
 	@Override
-	public Mat processFrame(VideoFeed videoFeed, Mat raw){
+	public Mat processFrame(VideoFeed videoFeed, Mat frame){
 
-		raw = super.processFrame(videoFeed, raw);
+		frame = super.processFrame(videoFeed, frame);
 
 		if(isCalibrated()){
-			raw = Utils.process(raw, (s, d) -> Imgproc.undistort(s, d, cameraMatrix, distCoeffs)); // Lens correction
+			frame = Utils.process(frame, (s, d) -> Imgproc.undistort(s, d, cameraMatrix, distCoeffs)); // Lens correction
 		}
 
-		return raw;
+		return frame;
 	}
 
 }

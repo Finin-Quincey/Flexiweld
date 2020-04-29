@@ -51,10 +51,10 @@ public abstract class CheckerboardDetectionMode extends LiveMode {
 	}
 
 	@Override
-	public Mat processFrame(VideoFeed videoFeed, Mat raw){
+	public Mat processFrame(VideoFeed videoFeed, Mat frame){
 
 		// findChessboardCorners works best with a greyscale image
-		Imgproc.cvtColor(raw, greyscaleFrame, Imgproc.COLOR_BGR2GRAY);
+		Imgproc.cvtColor(frame, greyscaleFrame, Imgproc.COLOR_BGR2GRAY);
 
 		// No need to wipe or (worse) re-create the corners matrix every frame since it is more efficient just to let
 		// findChessboardCorners overwrite it every frame - however, this means it MUST be fully encapsulated, see the
@@ -64,7 +64,7 @@ public abstract class CheckerboardDetectionMode extends LiveMode {
 				Calib3d.CALIB_CB_ADAPTIVE_THRESH + Calib3d.CALIB_CB_NORMALIZE_IMAGE + Calib3d.CALIB_CB_FAST_CHECK);
 
 		if(foundCheckerboard){
-			Calib3d.drawChessboardCorners(raw, checkerboardSize, corners, true);
+			Calib3d.drawChessboardCorners(frame, checkerboardSize, corners, true);
 			patternDetectedReadout.setText(FlexiweldApp.CHECK_MARK + "Found checkerboard");
 			patternDetectedReadout.setForeground(FlexiweldApp.CONFIRM_TEXT_COLOUR);
 		}else{
@@ -72,7 +72,7 @@ public abstract class CheckerboardDetectionMode extends LiveMode {
 			patternDetectedReadout.setForeground(FlexiweldApp.ERROR_TEXT_COLOUR);
 		}
 
-		return super.processFrame(videoFeed, raw);
+		return super.processFrame(videoFeed, frame);
 
 	}
 

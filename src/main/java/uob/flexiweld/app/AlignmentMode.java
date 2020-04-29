@@ -64,17 +64,17 @@ public class AlignmentMode extends CheckerboardDetectionMode {
 	}
 
 	@Override
-	public Mat processFrame(VideoFeed videoFeed, Mat raw){
+	public Mat processFrame(VideoFeed videoFeed, Mat frame){
 
 		// This MUST be done BEFORE calling super! Otherwise alignment will be done w.r.t. the *uncalibrated* image!
 		if(isCalibrated()){
-			raw = Utils.process(raw, (s, d) -> Imgproc.undistort(s, d, cameraMatrix, distCoeffs)); // Lens correction
+			frame = Utils.process(frame, (s, d) -> Imgproc.undistort(s, d, cameraMatrix, distCoeffs)); // Lens correction
 		}
 
-		raw = super.processFrame(videoFeed, raw);
+		frame = super.processFrame(videoFeed, frame);
 
 		for(Line line : transformedGrid){
-			Imgproc.line(raw, line.getStart(), line.getEnd(), Utils.CYAN);
+			Imgproc.line(frame, line.getStart(), line.getEnd(), Utils.CYAN);
 		}
 
 		// Interesting test, keeps the grid in the same place and warps the image instead
@@ -87,7 +87,7 @@ public class AlignmentMode extends CheckerboardDetectionMode {
 
 		alignButton.setEnabled(foundCheckerboard());
 
-		return raw;
+		return frame;
 	}
 
 	private void performAlignment(){

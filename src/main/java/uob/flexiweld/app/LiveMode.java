@@ -34,9 +34,9 @@ public abstract class LiveMode extends CaptureMode {
 	}
 
 	@Override
-	public Mat processFrame(VideoFeed videoFeed, Mat raw){
+	public Mat processFrame(VideoFeed videoFeed, Mat frame){
 		fpsReadout.setText(String.format("%.4g fps", videoFeed.getFps()));
-		return raw; // Do nothing
+		return frame; // Do nothing to the frame
 	}
 
 	private void takeSnapshot(FlexiweldApp app){

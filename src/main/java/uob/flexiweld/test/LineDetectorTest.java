@@ -5,9 +5,9 @@ import org.opencv.core.*;
 import org.opencv.highgui.HighGui;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.videoio.VideoCapture;
+import uob.flexiweld.Utils;
 import uob.flexiweld.geom.Line;
 import uob.flexiweld.geom.LineTracker;
-import uob.flexiweld.Utils;
 
 import java.awt.*;
 import java.util.ArrayList;
