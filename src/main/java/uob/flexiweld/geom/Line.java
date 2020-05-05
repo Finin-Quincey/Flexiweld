@@ -1,6 +1,10 @@
 package uob.flexiweld.geom;
 
+import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * A {@code Line} object represents a straight line in 2D space. A line has a start point ({@link Line#getStart()}) and
@@ -150,6 +154,8 @@ public class Line {
 
 	// Binary operations
 
+	// It makes more sense for these to be static and take two arguments since they are symmetric (commutative)
+
 	/**
 	 * Returns a new line which bisects the angle between the two given lines. The resulting line extends to the
 	 * boundary of the quadrilateral formed by the given lines' start and end points; as such it is a <i>bimedian</i> of
@@ -254,6 +260,51 @@ public class Line {
 		// I did figure out a third way of doing it using trig, it's probably horribly inefficient but it avoids
 		// issues with infinity by working with angles instead of gradients, which is kinda neat
 
+	}
+
+	// Converters
+
+	/** Converts this line to an array of points. */
+	public Point[] toPoints(){
+		return new Point[]{this.getStart(), this.getEnd()};
+	}
+
+	/** Converts the given array of points to a new {@code Line}. */
+	public static Line fromPoints(Point... points){
+		if(points.length != 2) throw new IllegalArgumentException("Incorrect number of points, must be exactly 2");
+		return new Line(points[0], points[1]);
+	}
+
+	/**
+	 * Converts the given list of lines to a matrix of points, ready for transformations to be applied.
+	 * @param lines The lines to be converted
+	 * @return The resulting matrix
+	 */
+	public static MatOfPoint2f toMatrix(List<Line> lines){
+		MatOfPoint2f mat = new MatOfPoint2f();
+		lines.forEach(l -> mat.push_back(new MatOfPoint2f(l.toPoints())));
+		return mat;
+	}
+
+	/**
+	 * Converts the given matrix of points to a list of lines. This performs the inverse operation of
+	 * {@link Line#toMatrix(List)}.
+	 * @param mat The matrix to be converted
+	 * @return The resulting list of lines
+	 */
+	public static List<Line> fromMatrix(MatOfPoint2f mat){
+
+		Point[] points = mat.toArray();
+		if(points.length % 2 != 0) throw new IllegalArgumentException("Number of points in matrix must be a multiple of 2");
+
+		List<Line> lines = new ArrayList<>();
+		int i = 0;
+
+		while(i < points.length){
+			lines.add(Line.fromPoints(points[i++], points[i++]));
+		}
+
+		return lines;
 	}
 
 }

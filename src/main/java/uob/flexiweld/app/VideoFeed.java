@@ -1,17 +1,17 @@
 package uob.flexiweld.app;
 
-import org.opencv.core.Core;
-import org.opencv.core.CvException;
-import org.opencv.core.Mat;
-import org.opencv.core.Size;
+import org.opencv.core.Point;
+import org.opencv.core.*;
 import org.opencv.highgui.HighGui;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.videoio.VideoCapture;
 import org.opencv.videoio.Videoio;
 import uob.flexiweld.Utils;
+import uob.flexiweld.geom.Line;
 
 import java.awt.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -38,6 +38,7 @@ public class VideoFeed {
 	private Size cameraResolution;
 	private double maxFps;
 
+	private double scaleFactor;
 	private Size outputSize;
 
 	/** OpenCV can't be trusted to keep track of this properly so I'm doing it myself! */
@@ -144,7 +145,7 @@ public class VideoFeed {
 	 */
 	public void fit(int width, int height){
 		if(!isRunning()) throw new IllegalStateException("Video feed not running!");
-		double scaleFactor = Math.min(width/cameraResolution.width, height/cameraResolution.height);
+		scaleFactor = Math.min(width/cameraResolution.width, height/cameraResolution.height);
 		int newWidth = (int)(cameraResolution.width * scaleFactor);
 		int newHeight = (int)(cameraResolution.height * scaleFactor);
 		outputSize = new Size(newWidth, newHeight);
@@ -176,14 +177,49 @@ public class VideoFeed {
 		// Processing
 		out = mode.processFrame(this, raw);
 
-		out = Utils.process(out, (s, d) -> Core.flip(s, d, 1));
-		out = Utils.process(out, (s, d) -> Imgproc.resize(s, d, outputSize));
+		out = Utils.process(out, (s, d) -> Core.flip(s, d, 1)); // Mirror in x
+		out = Utils.process(out, (s, d) -> Imgproc.resize(s, d, outputSize)); // Scale to fit the window
+
+		// Add the annotations afterwards so they don't get scaled
+		// This means the positions need to be transformed accordingly, see the methods below
+		out = mode.annotateFrame(this, out);
 
 		recentFps.add(1000d / (System.currentTimeMillis() - time));
 		if(recentFps.size() > FPS_AVERAGE_WINDOW) recentFps.remove(0);
 
 		return HighGui.toBufferedImage(out);
 
+	}
+
+	/**
+	 * Returns a new point with the coordinates of the given point, transformed into the coordinate space of the video
+	 * feed output image.
+	 * @param point The point (in the raw image space) to be transformed
+	 * @return The resulting point, in the output (screen) coordinate space
+	 */
+	public Point transformForDisplay(Point point){
+		return new Point((int)((cameraResolution.width - point.x) * scaleFactor), (int)(point.y * scaleFactor));
+	}
+
+	/**
+	 * Returns a new line with the coordinates of the given line, transformed into the coordinate space of the video
+	 * feed output image.
+	 * @param line The line (in the raw image space) to be transformed
+	 * @return The resulting line, in the output (screen) coordinate space
+	 */
+	public Line transformForDisplay(Line line){
+		return new Line(transformForDisplay(line.getStart()), transformForDisplay(line.getEnd()));
+	}
+
+	/**
+	 * Returns a new point with the coordinates of the given point, transformed into the coordinate space of the video
+	 * feed output image.
+	 * @param points A matrix of points (in the raw image space) to be transformed
+	 * @return A matrix of the resulting points, in the output (screen) coordinate space
+	 */
+	public MatOfPoint2f transformForDisplay(MatOfPoint2f points){
+		// Better to stream the array directly than convert to a list first
+		return new MatOfPoint2f(Arrays.stream(points.toArray()).map(this::transformForDisplay).toArray(Point[]::new));
 	}
 
 }

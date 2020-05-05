@@ -63,8 +63,15 @@ public abstract class CheckerboardDetectionMode extends LiveMode {
 				// Not sure what the flags do, just using the recommended ones for now
 				Calib3d.CALIB_CB_ADAPTIVE_THRESH + Calib3d.CALIB_CB_NORMALIZE_IMAGE + Calib3d.CALIB_CB_FAST_CHECK);
 
+		return frame;
+
+	}
+
+	@Override
+	public Mat annotateFrame(VideoFeed videoFeed, Mat frame){
+
 		if(foundCheckerboard){
-			Calib3d.drawChessboardCorners(frame, checkerboardSize, corners, true);
+			Calib3d.drawChessboardCorners(frame, checkerboardSize, videoFeed.transformForDisplay(corners), true);
 			patternDetectedReadout.setText(FlexiweldApp.CHECK_MARK + "Found checkerboard");
 			patternDetectedReadout.setForeground(FlexiweldApp.CONFIRM_TEXT_COLOUR);
 		}else{
@@ -72,8 +79,6 @@ public abstract class CheckerboardDetectionMode extends LiveMode {
 			patternDetectedReadout.setForeground(FlexiweldApp.ERROR_TEXT_COLOUR);
 		}
 
-		return super.processFrame(videoFeed, frame);
-
+		return super.annotateFrame(videoFeed, frame);
 	}
-
 }

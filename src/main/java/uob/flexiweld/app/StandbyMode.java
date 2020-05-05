@@ -21,4 +21,8 @@ public class StandbyMode extends CaptureMode {
 		return frame; // Do nothing (will never be called anyway)
 	}
 
+	@Override
+	public Mat annotateFrame(VideoFeed videoFeed, Mat frame){
+		return frame; // Do nothing (will never be called anyway)
+	}
 }

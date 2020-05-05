@@ -16,6 +16,8 @@ import java.util.List;
 
 public class AlignmentMode extends CheckerboardDetectionMode {
 
+	public static final Scalar GRID_COLOUR = Utils.MAGENTA;
+
 	private final Mat cameraMatrix;
 	private final MatOfDouble distCoeffs;
 	@Nullable
@@ -73,10 +75,6 @@ public class AlignmentMode extends CheckerboardDetectionMode {
 
 		frame = super.processFrame(videoFeed, frame);
 
-		for(Line line : transformedGrid){
-			Imgproc.line(frame, line.getStart(), line.getEnd(), Utils.CYAN);
-		}
-
 		// Interesting test, keeps the grid in the same place and warps the image instead
 //		if(alignmentMatrix != null){
 //			double width = squareSize * checkerboardSize.width;
@@ -85,9 +83,20 @@ public class AlignmentMode extends CheckerboardDetectionMode {
 //			raw = new Mat(raw, new Rect(0, 0, (int)width, (int)height));
 //		}
 
+		return frame;
+	}
+
+	@Override
+	public Mat annotateFrame(VideoFeed videoFeed, Mat frame){
+
+		for(Line line : transformedGrid){
+			Imgproc.line(frame, videoFeed.transformForDisplay(line.getStart()),
+					videoFeed.transformForDisplay(line.getEnd()), GRID_COLOUR, 2);
+		}
+
 		alignButton.setEnabled(foundCheckerboard());
 
-		return frame;
+		return super.annotateFrame(videoFeed, frame);
 	}
 
 	private void performAlignment(){

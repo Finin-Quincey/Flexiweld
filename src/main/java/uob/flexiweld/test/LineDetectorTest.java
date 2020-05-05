@@ -161,6 +161,8 @@ public class LineDetectorTest {
 			List<Line> centrelines = Utils.findCentrelines(averagedLines, WIDTH_THRESHOLD, ANGLE_THRESHOLD);
 			centrelines.sort(Comparator.comparing(Line::angle).reversed());
 
+			// TODO: If we have time, convert this to use Intersection#intersect
+
 			for(Line line : centrelines) Imgproc.line(frame, line.getStart(), line.getEnd(), Utils.CYAN, 2, Imgproc.LINE_AA, 0);
 
 			for(int i = 0; i < centrelines.size(); i++){
@@ -181,7 +183,7 @@ public class LineDetectorTest {
 
 						if(j >= i){ // Ignore intersections with lines that have already been processed
 
-							// Sorting by angle earlier seems to mean line B always has the smaller angle
+							// Sorting by angle earlier means line B always has the smaller angle
 							double startAngle = lineB.angle();
 							double endAngle = lineA.angle();
 							double angle = endAngle - startAngle;
@@ -215,11 +217,13 @@ public class LineDetectorTest {
 				}
 
 				MatOfPoint2f dst = new MatOfPoint2f();
-				try{
-					Core.perspectiveTransform(new MatOfPoint2f(intersections.toArray(new Point[0])), dst, transform);
-				}catch(CvException e){
-					// Shut the hell up OpenCV, there's nothing wrong with my code
-				}
+//				try{
+					if(!intersections.isEmpty()){
+						Core.perspectiveTransform(new MatOfPoint2f(intersections.toArray(new Point[0])), dst, transform);
+					}
+//				}catch(CvException e){
+//					// Shut the hell up OpenCV, there's nothing wrong with my code
+//				}
 
 				List<Point> transformedInts = dst.toList();
 

@@ -50,4 +50,17 @@ public abstract class CaptureMode {
 	 */
 	public abstract Mat processFrame(VideoFeed videoFeed, Mat frame);
 
+	/**
+	 * Adds annotations to the given processed video frame and returns the result. Updating of controls and other GUI
+	 * elements should also be done in this method (not {@link CaptureMode#processFrame(VideoFeed, Mat)}) to ensure
+	 * everything is processed before updating the controls.
+	 * @param videoFeed The video feed object calling this method, for reference.
+	 * @param frame The processed video frame, after scaling, flipping, distortion correction and other
+	 *            modifications. Since some OpenCV methods modify images directly and others require a destination
+	 *            matrix, implementors are free to decide whether to modify the frame - the {@link Mat} object will
+	 *            not be used until the next frame, when it will be overwritten entirely.
+	 * @return The resulting frame, after annotations have been drawn
+	 */
+	public abstract Mat annotateFrame(VideoFeed videoFeed, Mat frame);
+
 }

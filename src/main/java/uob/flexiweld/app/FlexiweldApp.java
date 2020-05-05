@@ -40,7 +40,7 @@ public class FlexiweldApp {
 	public static final String CROSS_SYMBOL = "\u274c ";
 
 	public static final int STATUS_TEXT_SPACING = 30;
-	public static final int CONTROL_PANEL_WIDTH = 200;
+	public static final int CONTROL_PANEL_WIDTH = 240;
 
 	/** The {@link VideoFeed} object that controls the connection to the camera and the main processing sequence. */
 	private final VideoFeed videoFeed;
@@ -269,6 +269,27 @@ public class FlexiweldApp {
 		button.setBackground(BUTTON_BG_COLOUR);
 		button.setForeground(BUTTON_FG_COLOUR);
 		button.addActionListener(listener);
+		return button;
+	}
+
+	/**
+	 * Helper method to create a new {@link JButton} with the standard style for the control panel. Neatens up
+	 * the code. This version is for on/off controls, where the button text should change when clicked.
+	 * @param text The text to display on the button
+	 * @param listener The callback to execute when the button is pressed
+	 * @return the resulting {@code JButton}
+	 */
+	public static JButton createFancyToggleButton(String text, Color color, boolean startActivated, ActionListener listener){
+		JButton button = new JButton(startActivated ? text + " on" : text + " off");
+		button.setFont(BUTTON_FONT);
+		button.setBackground(BUTTON_BG_COLOUR);
+		button.setForeground(startActivated ? color : color.darker().darker());
+		button.addActionListener(listener);
+		button.addActionListener(e -> {
+			boolean activated = button.getText().endsWith("on"); // Yuck
+			button.setForeground(activated ? color.darker().darker() : color);
+			button.setText(activated ? text + " off" : text + " on");
+		});
 		return button;
 	}
 

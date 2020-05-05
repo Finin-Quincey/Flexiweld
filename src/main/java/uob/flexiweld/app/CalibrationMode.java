@@ -54,8 +54,13 @@ public class CalibrationMode extends CheckerboardDetectionMode {
 	@Override
 	public Mat processFrame(VideoFeed videoFeed, Mat frame){
 		frame = super.processFrame(videoFeed, frame);
-		captureButton.setEnabled(!finishButton.isEnabled() && foundCheckerboard());
 		return frame;
+	}
+
+	@Override
+	public Mat annotateFrame(VideoFeed videoFeed, Mat frame){
+		captureButton.setEnabled(!finishButton.isEnabled() && foundCheckerboard());
+		return super.annotateFrame(videoFeed, frame);
 	}
 
 	private String getImageCountStatus(int captured){
