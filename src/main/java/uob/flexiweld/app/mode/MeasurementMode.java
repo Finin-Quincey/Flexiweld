@@ -161,7 +161,7 @@ public class MeasurementMode extends LiveMode {
 			List<Intersection> transformedInts = Intersection.fromMatrix(dst);
 
 			for(int i = 0; i < intersectionList.size(); i++){
-				double angle = Line.acuteAngleBetween(transformedInts.get(i).getLineA(),transformedInts.get(i).getLineB());
+				double angle = Line.acuteAngleBetween(transformedInts.get(i).getLineA(), transformedInts.get(i).getLineB());
 				intersections.put(intersectionList.get(i), angle);
 			}
 		}
