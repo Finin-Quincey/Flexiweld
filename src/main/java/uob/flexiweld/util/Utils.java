@@ -1,4 +1,4 @@
-package uob.flexiweld;
+package uob.flexiweld.util;
 
 import org.opencv.core.*;
 import uob.flexiweld.geom.Line;

@@ -3,7 +3,7 @@ package uob.flexiweld.geom;
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
 import org.opencv.imgproc.Imgproc;
-import uob.flexiweld.Utils;
+import uob.flexiweld.util.Utils;
 
 import java.util.ArrayList;
 import java.util.Collections;

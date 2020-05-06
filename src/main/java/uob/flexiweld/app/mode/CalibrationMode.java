@@ -6,8 +6,8 @@ import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfDouble;
 import org.opencv.core.Size;
-import uob.flexiweld.Utils;
-import uob.flexiweld.CalibrationSettings;
+import uob.flexiweld.util.Utils;
+import uob.flexiweld.util.CalibrationSettings;
 import uob.flexiweld.app.FlexiweldApp;
 import uob.flexiweld.app.VideoFeed;
 

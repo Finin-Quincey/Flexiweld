@@ -6,7 +6,7 @@ import org.opencv.highgui.HighGui;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.videoio.VideoCapture;
 import org.opencv.videoio.Videoio;
-import uob.flexiweld.Utils;
+import uob.flexiweld.util.Utils;
 import uob.flexiweld.app.mode.CaptureMode;
 import uob.flexiweld.geom.Line;
 
