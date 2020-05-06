@@ -1,6 +1,8 @@
-package uob.flexiweld.app;
+package uob.flexiweld.app.mode;
 
 import org.opencv.core.Mat;
+import uob.flexiweld.app.FlexiweldApp;
+import uob.flexiweld.app.VideoFeed;
 
 import java.awt.*;
 import java.util.List;

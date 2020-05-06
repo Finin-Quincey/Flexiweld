@@ -1,10 +1,12 @@
-package uob.flexiweld.app;
+package uob.flexiweld.app.mode;
 
 import org.opencv.calib3d.Calib3d;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
+import uob.flexiweld.app.FlexiweldApp;
+import uob.flexiweld.app.VideoFeed;
 
 import javax.swing.*;
 import java.awt.*;

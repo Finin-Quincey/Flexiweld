@@ -1,11 +1,10 @@
-package uob.flexiweld.app;
+package uob.flexiweld;
 
 import org.opencv.core.CvException;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfDouble;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.utils.Converters;
-import uob.flexiweld.Utils;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;

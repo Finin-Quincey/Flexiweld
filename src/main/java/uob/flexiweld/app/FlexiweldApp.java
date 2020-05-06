@@ -1,6 +1,9 @@
 package uob.flexiweld.app;
 
 import org.opencv.core.Core;
+import uob.flexiweld.app.mode.CaptureMode;
+import uob.flexiweld.app.mode.MeasurementMode;
+import uob.flexiweld.app.mode.StandbyMode;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
