@@ -1,5 +1,6 @@
 package uob.flexiweld.app;
 
+import com.sun.istack.internal.Nullable;
 import org.opencv.core.Point;
 import org.opencv.core.*;
 import org.opencv.imgproc.Imgproc;
@@ -29,8 +30,9 @@ public class MeasurementMode extends LiveMode {
 	/** Pairs of parallel, non-coincident lines within this distance of each other are considered to be tubes */
 	public static final double WIDTH_THRESHOLD = 200; // Excludes e.g. the edges of the test card
 
-	private final Mat cameraMatrix;
-	private final MatOfDouble distCoeffs;
+	@Nullable
+	private final CalibrationSettings calibrationSettings;
+	@Nullable
 	private final Mat alignmentMatrix;
 
 	private final LineTracker lineTracker;
@@ -50,13 +52,12 @@ public class MeasurementMode extends LiveMode {
 	private boolean showAngles = true;
 
 	public MeasurementMode(){
-		this(null, null, null);
+		this(null, null);
 	}
 
-	public MeasurementMode(Mat cameraMatrix, MatOfDouble distCoeffs, Mat alignmentMatrix){
+	public MeasurementMode(@Nullable CalibrationSettings calibrationSettings, @Nullable Mat alignmentMatrix){
 		super("Measuring");
-		this.cameraMatrix = cameraMatrix;
-		this.distCoeffs = distCoeffs;
+		this.calibrationSettings = calibrationSettings;
 		this.alignmentMatrix = alignmentMatrix;
 		this.lineTracker = new LineTracker(5);
 		this.intersections = new HashMap<>();
@@ -64,7 +65,7 @@ public class MeasurementMode extends LiveMode {
 	}
 
 	public boolean isCalibrated(){
-		return cameraMatrix != null && distCoeffs != null;
+		return calibrationSettings != null;
 	}
 
 	public boolean isAligned(){
@@ -88,12 +89,12 @@ public class MeasurementMode extends LiveMode {
 
 	private void prepareCalibration(FlexiweldApp app){
 		// TODO: Dialogue box that prompts the user for the calibration parameters below
-		app.setMode(new CalibrationMode(new Size(9, 6), 25.5, this));
+		app.setMode(new CalibrationMode(new Size(9, 6), 25.5, calibrationSettings, alignmentMatrix));
 	}
 
 	private void prepareAlignment(FlexiweldApp app){
 		// TODO: Dialogue box that prompts the user for the alignment parameters below
-		app.setMode(new AlignmentMode(new Size(9, 6), 25.5, cameraMatrix, distCoeffs, alignmentMatrix));
+		app.setMode(new AlignmentMode(new Size(9, 6), 25.5, calibrationSettings, alignmentMatrix));
 	}
 
 	@Override
@@ -118,7 +119,7 @@ public class MeasurementMode extends LiveMode {
 	public Mat processFrame(VideoFeed videoFeed, Mat frame){
 
 		if(isCalibrated()){
-			frame = Utils.process(frame, (s, d) -> Imgproc.undistort(s, d, cameraMatrix, distCoeffs)); // Lens correction
+			frame = calibrationSettings.undistort(frame); // Lens correction
 		}
 
 		// "Image space" refers to coordinates in the undistorted camera frame in pixels, with no other processing

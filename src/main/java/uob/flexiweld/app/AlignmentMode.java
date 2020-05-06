@@ -18,10 +18,10 @@ public class AlignmentMode extends CheckerboardDetectionMode {
 
 	public static final Scalar GRID_COLOUR = Utils.MAGENTA;
 
-	private final Mat cameraMatrix;
-	private final MatOfDouble distCoeffs;
 	@Nullable
-	private Mat alignmentMatrix;
+	private final CalibrationSettings calibrationSettings;
+	@Nullable
+	private Mat alignmentMatrix; // N.B. This isn't final here
 
 	private final Line[] grid;
 	private final List<Line> transformedGrid = new ArrayList<>();
@@ -29,10 +29,9 @@ public class AlignmentMode extends CheckerboardDetectionMode {
 	private JButton alignButton;
 	private JButton doneButton;
 
-	public AlignmentMode(Size checkerboardSize, double squareSize, Mat cameraMatrix, MatOfDouble distCoeffs, @Nullable Mat alignmentMatrix){
+	public AlignmentMode(Size checkerboardSize, double squareSize, @Nullable CalibrationSettings calibrationSettings, @Nullable Mat alignmentMatrix){
 		super("Alignment", checkerboardSize, squareSize);
-		this.cameraMatrix = cameraMatrix;
-		this.distCoeffs = distCoeffs;
+		this.calibrationSettings = calibrationSettings;
 		this.alignmentMatrix = alignmentMatrix;
 		grid = Utils.generateGrid((int)checkerboardSize.width + 1, (int)checkerboardSize.height + 1,
 				new Size((checkerboardSize.width + 1) * squareSize, (checkerboardSize.height + 1) * squareSize),
@@ -41,7 +40,7 @@ public class AlignmentMode extends CheckerboardDetectionMode {
 	}
 
 	public boolean isCalibrated(){
-		return cameraMatrix != null && distCoeffs != null;
+		return calibrationSettings != null;
 	}
 
 	@Override
@@ -70,7 +69,7 @@ public class AlignmentMode extends CheckerboardDetectionMode {
 
 		// This MUST be done BEFORE calling super! Otherwise alignment will be done w.r.t. the *uncalibrated* image!
 		if(isCalibrated()){
-			frame = Utils.process(frame, (s, d) -> Imgproc.undistort(s, d, cameraMatrix, distCoeffs)); // Lens correction
+			frame = calibrationSettings.undistort(frame); // Lens correction
 		}
 
 		frame = super.processFrame(videoFeed, frame);
@@ -142,7 +141,7 @@ public class AlignmentMode extends CheckerboardDetectionMode {
 	}
 
 	private void exitAlignment(FlexiweldApp app){
-		app.setMode(new MeasurementMode(cameraMatrix, distCoeffs, alignmentMatrix));
+		app.setMode(new MeasurementMode(calibrationSettings, alignmentMatrix));
 	}
 
 }

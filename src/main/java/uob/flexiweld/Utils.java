@@ -180,4 +180,25 @@ public final class Utils {
 		return points;
 	}
 
+	/**
+	 * Ellipsises the given string if it is longer than the given max length.
+	 * @param s The string to ellipsise
+	 * @param maxLength The maximum length of the string
+	 * @param centre True to remove characters from the centre, false to remove them from the end
+	 * @return The given string, with characters removed and replaced with ... if necessary such that it is no longer
+	 * than the specified max length.
+	 */
+	public static String ellipsise(String s, int maxLength, boolean centre){
+
+		if(s.length() <= maxLength) return s;
+
+		int charsToKeep = maxLength - 3;
+
+		if(centre){
+			return s.substring(0, charsToKeep/2) + "..." + s.substring(s.length() - charsToKeep + charsToKeep/2);
+		}else{
+			return s.substring(0, charsToKeep) + "...";
+		}
+	}
+
 }

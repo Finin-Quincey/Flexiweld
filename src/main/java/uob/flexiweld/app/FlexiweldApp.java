@@ -4,14 +4,17 @@ import org.opencv.core.Core;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.event.ActionListener;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -41,6 +44,8 @@ public class FlexiweldApp {
 
 	public static final int STATUS_TEXT_SPACING = 30;
 	public static final int CONTROL_PANEL_WIDTH = 240;
+
+	public final JFileChooser fileChooser = new JFileChooser();
 
 	/** The {@link VideoFeed} object that controls the connection to the camera and the main processing sequence. */
 	private final VideoFeed videoFeed;
@@ -239,6 +244,46 @@ public class FlexiweldApp {
 
 		jFrame.repaint();
 
+	}
+
+	/**
+	 * Displays a save dialog, adding a default extension to the filename if necessary, and warning the user if an
+	 * existing file will be overwritten.
+	 * @param filter The filename filter to use. The first extension in this filter will be the default extension.
+	 * @return The resulting file path, or null if the user cancelled the operation at any stage
+	 * @throws IllegalArgumentException if the given filter specifies no file extensions
+	 */
+	public String saveWithOverwriteWarning(FileNameExtensionFilter filter){
+
+		if(filter.getExtensions().length == 0) throw new IllegalArgumentException("At least one file extension must be specified");
+
+		fileChooser.setFileFilter(filter);
+
+		int result = fileChooser.showSaveDialog(jFrame);
+
+			if(result == JFileChooser.APPROVE_OPTION){
+
+			File file = fileChooser.getSelectedFile();
+			String name = file.getName();
+			String path = file.getPath();
+
+			if(Arrays.stream(filter.getExtensions()).noneMatch(s -> file.getName().endsWith(s))){
+				path = path + "." + filter.getExtensions()[0];
+				name = name + "." + filter.getExtensions()[0];
+			}
+
+			if(file.exists()){
+				int choice = JOptionPane.showOptionDialog(jFrame, String.format("%s already exists, would you like to replace it?", name),
+						"Confirm replace", JOptionPane.OK_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE, null,
+						new String[]{"Replace", "Cancel"}, "Cancel");
+				// Don't know if recursion is the best way of doing it but it works for our purposes
+				if(choice != JOptionPane.OK_OPTION) return saveWithOverwriteWarning(filter);
+			}
+
+			return path;
+		}
+
+		return null;
 	}
 
 	/**
