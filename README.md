@@ -3,7 +3,7 @@ Prototype computer vision software for a system for welding steel tubes into fra
 
 Written in Java with OpenCV 3.4.3, designed to run on a Raspberry Pi 3 with Pi Camera.
 
-[[flexiweld_demo_app.jpg]]
+![image not found](https://github.com/Finin-Quincey/Flexiweld/blob/master/flexiweld_demo_app.jpg)
 
 ## Specs
 - Raspberry Pi 3B
