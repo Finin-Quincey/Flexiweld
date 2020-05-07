@@ -3,6 +3,8 @@ package uob.flexiweld.util;
 import org.opencv.core.*;
 import uob.flexiweld.geom.Line;
 
+import javax.swing.filechooser.FileNameExtensionFilter;
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -15,7 +17,7 @@ import java.util.function.BiConsumer;
  */
 public final class Utils {
 
-	// Remember these are blue-green-red (no idea why everything is BGR, seems a bit backwards to me)
+	// Remember these are blue-green-red (apparently this convention is from a very old version of OpenCV but it stuck)
 	public static final Scalar WHITE = new Scalar(255, 255, 255);
 	public static final Scalar BLACK = new Scalar(0, 0, 0);
 	public static final Scalar RED = new Scalar(0, 0, 255);
@@ -27,23 +29,9 @@ public final class Utils {
 
 	private Utils(){} // No instances!
 
-	/**
-	 * Processes the given source image using the given operation, and returns the resulting destination image. This
-	 * method eliminates the need for explicit creation of a new destination image variable each time, allowing each
-	 * operation to be condensed to a one-liner, much like {@code String} manipulation. For example, a typical call
-	 * might look like this:
-	 * <p></p>
-	 * <center>{@code frame = process(frame, (s, d) -> Imgproc.resize(s, d, new Size(width, height)));}</center>
-	 * @param src The source image to be processed
-	 * @param operation A {@link BiConsumer} representing the operation to be performed, usually expressed as a lambda
-	 *                  expression.
-	 * @return The resulting destination image. This may be assigned to the source image variable to overwrite it.
-	 */
-	public static Mat process(Mat src, BiConsumer<Mat, Mat> operation){
-		Mat dest = Mat.zeros(src.rows(), src.cols(), src.type());
-		operation.accept(src, dest);
-		return dest;
-	}
+	// ================================================================================================================
+	// Generators
+	// ================================================================================================================
 
 	/**
 	 * Generates an array of {@link Line} objects which form a grid with the given dimensions that covers the area
@@ -108,9 +96,32 @@ public final class Utils {
 //		};
 	}
 
+	/**
+	 * Generates a matrix of points representing the corners of a checkerboard with the given parameters.
+	 * @param size The number of internal corners in the checkerboard in each direction
+	 * @param squareSize The width of each square in the checkerboard, in real-world units (usually millimetres)
+	 * @return The resulting matrix of points
+	 */
+	public static MatOfPoint3f generateCheckerboardPoints(Size size, double squareSize){
+
+		MatOfPoint3f points = new MatOfPoint3f();
+
+		for(int y = 0; y < size.height; ++y){
+			for(int x = 0; x < size.width; ++x){
+				// A bit unintuitive but hey, we got there in the end!
+				points.push_back(new MatOfPoint3f(new Point3(y * squareSize, x * squareSize, 0)));
+			}
+		}
+
+		return points;
+	}
+
+	/**
+	 * Sets up matrices for use with {@link org.opencv.imgproc.Imgproc#remap(Mat, Mat, Mat, Mat, int)}.
+	 * I have since realised it's easier to use {@link Core#flip(Mat, Mat, int)}.
+	 */
 	public static void setupFlipMatrices(Mat mapX, Mat mapY){
-		// TODO: Figure out what this is actually doing!
-		// (I know what it's doing in theory, but the actual matrix manipulation bit is kinda opaque)
+
 		float[] buffX = new float[(int)(mapX.total() * mapX.channels())];
 		mapX.get(0, 0, buffX);
 		float[] buffY = new float[(int)(mapY.total() * mapY.channels())];
@@ -127,17 +138,26 @@ public final class Utils {
 		mapY.put(0, 0, buffY);
 	}
 
+	// ================================================================================================================
+	// Processing
+	// ================================================================================================================
+
 	/**
-	 * Flattens the given nested collection. The returned collection is an unmodifiable collection of all the elements
-	 * contained within all of the sub-collections of the given nested collection.
-	 * @param collection A nested collection to flatten
-	 * @param <E> The type of elements in the given nested collection
-	 * @return The resulting flattened collection.
+	 * Processes the given source image using the given operation, and returns the resulting destination image. This
+	 * method eliminates the need for explicit creation of a new destination image variable each time, allowing each
+	 * operation to be condensed to a one-liner, much like {@code String} manipulation. For example, a typical call
+	 * might look like this:
+	 * <p></p>
+	 * <center>{@code frame = process(frame, (s, d) -> Imgproc.resize(s, d, new Size(width, height)));}</center>
+	 * @param src The source image to be processed
+	 * @param operation A {@link BiConsumer} representing the operation to be performed, usually expressed as a lambda
+	 *                  expression.
+	 * @return The resulting destination image. This may be assigned to the source image variable to overwrite it.
 	 */
-	public static <E> Collection<E> flatten(Collection<? extends Collection<E>> collection){
-		Collection<E> result = new ArrayList<>();
-		collection.forEach(result::addAll);
-		return Collections.unmodifiableCollection(result);
+	public static Mat process(Mat src, BiConsumer<Mat, Mat> operation){
+		Mat dest = Mat.zeros(src.rows(), src.cols(), src.type());
+		operation.accept(src, dest);
+		return dest;
 	}
 
 	/**
@@ -166,18 +186,21 @@ public final class Utils {
 		return centrelines;
 	}
 
-	public static MatOfPoint3f generateChessboardPoints(Size size, double squareSize){
+	// ================================================================================================================
+	// Miscellaneous
+	// ================================================================================================================
 
-		MatOfPoint3f points = new MatOfPoint3f();
-
-		for(int y = 0; y < size.height; ++y){
-			for(int x = 0; x < size.width; ++x){
-				// A bit unintuitive but hey, we got there in the end!
-				points.push_back(new MatOfPoint3f(new Point3(y * squareSize, x * squareSize, 0)));
-			}
-		}
-
-		return points;
+	/**
+	 * Flattens the given nested collection. The returned collection is an unmodifiable collection of all the elements
+	 * contained within all of the sub-collections of the given nested collection.
+	 * @param collection A nested collection to flatten
+	 * @param <E> The type of elements in the given nested collection
+	 * @return The resulting flattened collection.
+	 */
+	public static <E> Collection<E> flatten(Collection<? extends Collection<E>> collection){
+		Collection<E> result = new ArrayList<>();
+		collection.forEach(result::addAll);
+		return Collections.unmodifiableCollection(result);
 	}
 
 	/**
@@ -199,6 +222,36 @@ public final class Utils {
 		}else{
 			return s.substring(0, charsToKeep) + "...";
 		}
+	}
+
+	/**
+	 * Creates a new {@link FileNameExtensionFilter} with the given description and extensions, with the extensions
+	 * listed at the end of the description as per the convention used in e.g. Microsoft office.
+	 * @param description A description of the file type
+	 * @param extensions The extensions this filter should accept
+	 * @return The resulting {@code FileNameExtensionFilter}.
+	 */
+	public static FileNameExtensionFilter createExtensionFilter(String description, String... extensions){
+		description = description + " (*." + String.join(", *.", extensions) + ")";
+		return new FileNameExtensionFilter(description, extensions);
+	}
+
+	/**
+	 * Converts the given {@link Color} to a {@link Scalar} for use with OpenCV methods.
+	 * @param color The colour to convert
+	 * @return The resulting scalar, in BGR format
+	 */
+	public static Scalar toScalar(Color color){
+		return new Scalar(color.getBlue(), color.getGreen(), color.getRed());
+	}
+
+	/**
+	 * Converts the given {@link Scalar} to a {@link Color} for use with AWT/Swing methods.
+	 * @param scalar The scalar to convert, in BGR format
+	 * @return The resulting colour
+	 */
+	public static Color toColor(Scalar scalar){
+		return new Color((int)scalar.val[2], (int)scalar.val[1], (int)scalar.val[0]);
 	}
 
 }

@@ -12,19 +12,35 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.List;
 
+/**
+ * Base class for capture modes that perform checkerboard detection. This class handles detection of the checkerboard
+ * using {@link Calib3d#findChessboardCorners(Mat, Size, MatOfPoint2f, int)}, drawing of the detected points to the
+ * screen, and displaying a found / not found readout in the status bar.
+ * @author Finin Quincey
+ */
 public abstract class CheckerboardDetectionMode extends LiveMode {
 
 	/** The number of intersections in each direction the checkerboard has (one less than the number of squares). */
 	protected final Size checkerboardSize;
-	/** The size of each square of the checkerboard in millimetres. */
+	/** The size of each square of the checkerboard, in millimetres. */
 	protected final double squareSize;
 
+	/** A container for the greyscale version of the most recent video frame, used for checkerboard detection. */
 	private Mat greyscaleFrame;
+	/** The matrix of checkerboard corners detected in the most recent frame. */
 	private MatOfPoint2f corners;
+	/** Keeps track of whether a checkerboard was found or not. */
 	private boolean foundCheckerboard;
 
-	JLabel patternDetectedReadout;
+	/** Status bar label for the checkerboard found / not found readout. */
+	private JLabel patternDetectedReadout;
 
+	/**
+	 * Creates a new {@code CheckerboardDetectionMode} with the given parameters.
+	 * @param name The display name of this mode
+	 * @param checkerboardSize The number of internal corners in the checkerboard in each direction
+	 * @param squareSize The size of each square of the checkerboard, in millimetres
+	 */
 	public CheckerboardDetectionMode(String name, Size checkerboardSize, double squareSize){
 		super(name);
 		this.checkerboardSize = checkerboardSize;
@@ -33,6 +49,7 @@ public abstract class CheckerboardDetectionMode extends LiveMode {
 		greyscaleFrame = new Mat();
 	}
 
+	/** Returns true if a checkerboard was detected in the current frame, false if not. */
 	public boolean foundCheckerboard(){
 		return foundCheckerboard;
 	}
@@ -58,14 +75,14 @@ public abstract class CheckerboardDetectionMode extends LiveMode {
 		// findChessboardCorners works best with a greyscale image
 		Imgproc.cvtColor(frame, greyscaleFrame, Imgproc.COLOR_BGR2GRAY);
 
-		// No need to wipe or (worse) re-create the corners matrix every frame since it is more efficient just to let
+		// No need to wipe (or worse, re-create) the corners matrix every frame since it is more efficient just to let
 		// findChessboardCorners overwrite it every frame - however, this means it MUST be fully encapsulated, see the
 		// comment in getCorners() above
 		foundCheckerboard = Calib3d.findChessboardCorners(greyscaleFrame, checkerboardSize, corners,
 				// Not sure what the flags do, just using the recommended ones for now
 				Calib3d.CALIB_CB_ADAPTIVE_THRESH + Calib3d.CALIB_CB_NORMALIZE_IMAGE + Calib3d.CALIB_CB_FAST_CHECK);
 
-		return frame;
+		return frame; // Return the unmodified frame for further processing
 
 	}
 

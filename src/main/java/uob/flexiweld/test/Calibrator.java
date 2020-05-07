@@ -134,7 +134,7 @@ public class Calibrator {
 
 	public static void runCalibrationSequence(VideoCapture vc, Mat cameraMatrix, Mat distCoeffs, List<Mat> rvecs, List<Mat> tvecs){
 
-		List<Mat> objectPoints = Collections.nCopies(CALIBRATION_IMAGES, Utils.generateChessboardPoints(CHESSBOARD_SIZE, SQUARE_SIZE_MM));
+		List<Mat> objectPoints = Collections.nCopies(CALIBRATION_IMAGES, Utils.generateCheckerboardPoints(CHESSBOARD_SIZE, SQUARE_SIZE_MM));
 		List<Mat> imagePoints = new ArrayList<>();
 
 		Mat frame = new Mat();

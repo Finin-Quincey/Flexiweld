@@ -27,22 +27,32 @@ import java.util.List;
  */
 public class VideoFeed {
 
+	/** The number of frames to average the displayed framerate over. */
 	private static final int FPS_AVERAGE_WINDOW = 10;
 
+	/** The camera number this video feed accesses. */
 	private final int cameraNumber;
 
+	/** The {@link VideoCapture} object this video feed uses to read images from the camera. */
 	private VideoCapture vc;
+	/** The raw image from the camera, which gets overwritten each frame. */
 	private Mat raw;
+	/** The output image drawn on the screen, which gets overwritten each frame. */
 	private Mat out;
 
 	// Camera properties
+	/** The dimensions of the raw image from the camera. This is set when {@link VideoFeed#start()} is called. */
 	private Size cameraResolution;
+	/** The maximum framerate of the camera, defined by the hardware itself. */
 	private double maxFps;
 
+	/** The factor by which the output is scaled from the raw image. This is set by {@link VideoFeed#fit(int, int)}. */
 	private double scaleFactor;
+	/** The dimensions of the output image drawn on the screen. This is set by {@link VideoFeed#fit(int, int)}. */
 	private Size outputSize;
 
-	/** OpenCV can't be trusted to keep track of this properly so I'm doing it myself! */
+	/** Whether this video feed is running, i.e. actually capturing images. Sometimes {@link VideoCapture#isOpened()}
+	 * returns true when the camera can't actually be read, whereas this field is only ever true if it can be read. */
 	private boolean running;
 	/** Keeps track of whether the video feed is paused or not. Pausing the video feed does not release the camera, it
 	 * just stops overwriting {@link VideoFeed#raw} on update (and the processing still gets run). */
@@ -50,9 +60,11 @@ public class VideoFeed {
 	/** Keeps track of when the video feed should resume. This is zero if the feed is running or paused indefinitely. */
 	private long resumeTime;
 
-	/** Keeps track of the frames per second over the last 10 frames, for a moving average. */
+	/** Keeps track of the frames per second over the last n frames, for a moving average. */
 	private final List<Double> recentFps = new ArrayList<>(FPS_AVERAGE_WINDOW);
 
+	/** Creates a new {@code VideoFeed} for the camera with the given camera number (if there is only one camera, it
+	 * probably has the camera number 0). */
 	public VideoFeed(int cameraNumber){
 		this.cameraNumber = cameraNumber;
 		vc = new VideoCapture();
@@ -163,32 +175,35 @@ public class VideoFeed {
 
 		if(!isRunning()) throw new IllegalStateException("Video feed not running!");
 
-		long time = System.currentTimeMillis();
+		long time = System.currentTimeMillis(); // Log the current system time for framerate calculation later
 
 		if(paused){
+			// Check if the video feed should resume
 			if(resumeTime > 0 && time > resumeTime){
 				paused = false;
 				resumeTime = 0;
 			}
+			// Return the previous output and do no further processing
 			return HighGui.toBufferedImage(out);
 		}
 
-		vc.read(raw);
+		vc.read(raw); // Read the raw frame from the camera
 
 		// Processing
-		out = mode.processFrame(this, raw);
+		out = mode.processFrame(this, raw); // Allow the current capture mode to do whatever processing it does
 
 		out = Utils.process(out, (s, d) -> Core.flip(s, d, 1)); // Mirror in x
 		out = Utils.process(out, (s, d) -> Imgproc.resize(s, d, outputSize)); // Scale to fit the window
 
-		// Add the annotations afterwards so they don't get scaled
+		// Add the annotations afterwards so they don't get scaled or flipped
 		// This means the positions need to be transformed accordingly, see the methods below
 		out = mode.annotateFrame(this, out);
 
+		// Update the framerate tracker based on how long it took to process the frame
 		recentFps.add(1000d / (System.currentTimeMillis() - time));
 		if(recentFps.size() > FPS_AVERAGE_WINDOW) recentFps.remove(0);
 
-		return HighGui.toBufferedImage(out);
+		return HighGui.toBufferedImage(out); // Convert to a buffered image for the app to display
 
 	}
 
@@ -213,8 +228,8 @@ public class VideoFeed {
 	}
 
 	/**
-	 * Returns a new point with the coordinates of the given point, transformed into the coordinate space of the video
-	 * feed output image.
+	 * Returns a new matrix of points with the coordinates of the given matrix of points, transformed into the
+	 * coordinate space of the video feed output image.
 	 * @param points A matrix of points (in the raw image space) to be transformed
 	 * @return A matrix of the resulting points, in the output (screen) coordinate space
 	 */

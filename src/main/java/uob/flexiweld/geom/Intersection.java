@@ -56,23 +56,23 @@ public class Intersection {
 	}
 
 	/**
-	 * Converts the given list of intersections to a matrix of points, ready for transformations to be applied.
-	 * @param intersections The intersections to be converted
+	 * Packs the given list of intersections into a matrix of points, ready for transformations to be applied.
+	 * @param intersections A list of intersections to be packed
 	 * @return The resulting matrix
 	 */
-	public static MatOfPoint2f toMatrix(List<Intersection> intersections){
+	public static MatOfPoint2f pack(List<Intersection> intersections){
 		MatOfPoint2f mat = new MatOfPoint2f();
 		intersections.forEach(i -> mat.push_back(new MatOfPoint2f(i.toPoints())));
 		return mat;
 	}
 
 	/**
-	 * Converts the given matrix of points to a list of intersections. This performs the inverse operation of
-	 * {@link Intersection#toMatrix(List)}.
-	 * @param mat The matrix to be converted
+	 * Unpacks the given matrix of points into a list of intersections. This performs the inverse operation of
+	 * {@link Intersection#pack(List)}.
+	 * @param mat The matrix to be unpacked
 	 * @return The resulting list of intersections
 	 */
-	public static List<Intersection> fromMatrix(MatOfPoint2f mat){
+	public static List<Intersection> unpack(MatOfPoint2f mat){
 
 		Point[] points = mat.toArray();
 		if(points.length % 5 != 0) throw new IllegalArgumentException("Number of points in matrix must be a multiple of 5");

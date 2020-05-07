@@ -7,6 +7,10 @@ import uob.flexiweld.app.VideoFeed;
 import java.awt.*;
 import java.util.List;
 
+/**
+ * Capture mode for when the video feed is not running. This simply displays the start button, and does nothing else.
+ * @author Finin Quincey
+ */
 public class StandbyMode extends CaptureMode {
 
 	public StandbyMode(){

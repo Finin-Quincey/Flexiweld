@@ -6,57 +6,77 @@ import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfDouble;
 import org.opencv.core.Size;
-import uob.flexiweld.util.Utils;
-import uob.flexiweld.util.CalibrationSettings;
 import uob.flexiweld.app.FlexiweldApp;
 import uob.flexiweld.app.VideoFeed;
+import uob.flexiweld.util.CalibrationSettings;
+import uob.flexiweld.util.Utils;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * Capture mode responsible for performing calibration and saving/loading calibration files. This class handles the
+ * capturing of calibration images and the calculation, saving and loading of calibration parameters.
+ * @author Finin Quincey
+ */
 public class CalibrationMode extends CheckerboardDetectionMode {
 
-	private final FileNameExtensionFilter clbFilter = new FileNameExtensionFilter("Calibration files (*.clb)", "clb");
+	/** A file filter for .clb (calibration) files. */
+	// I literally just made up this file extension, it's not a recognised thing!
+	private static final FileNameExtensionFilter CLB_FILTER = Utils.createExtensionFilter("Calibration files", "clb");
 
-	private static final int CALIBRATION_IMAGES = 10; // TODO: Maybe allow this to be changed, or do away with a fixed number entirely
+	/** The minimum number of calibration images required to perform the calibration. */
+	private static final int MIN_CALIBRATION_IMAGES = 10; // TODO: Make this an actual minimum, not a fixed number
 
 	private final List<Mat> objectPoints;
+	/** Stores the corner coordinates (in image pixels) of the detected calibration pattern for each frame. */
 	private final List<Mat> imagePoints;
 
-	@Nullable
-	private CalibrationSettings calibrationSettings; // N.B. This isn't final here
-	@Nullable
-	private Mat alignmentMatrix; // N.B. This isn't final here
+	/** The current calibration settings used for undistorting the video feed. */
+	@Nullable private CalibrationSettings calibrationSettings; // N.B. This isn't final in this class
+	/** The current alignment matrix used to calculate the real-world positions of image points. */
+	@Nullable private Mat alignmentMatrix; // N.B. This isn't final in this class
 
-	JLabel progressReadout;
-	JButton captureButton;
-	JButton finishButton;
-	JButton exitButton;
-	JButton saveButton;
-	JButton loadButton;
+	// UI components
+	private JLabel progressReadout;
+	private JButton captureButton;
+	private JButton finishButton;
+	private JButton exitButton;
+	private JButton saveButton;
+	private JButton loadButton;
 
+	/**
+	 * Creates a new {@code CaptureMode} with the given parameters.
+	 * @param checkerboardSize The number of internal corners in the checkerboard in each direction
+	 * @param squareSize The size of each square of the checkerboard, in millimetres
+	 * @param calibrationSettings The current {@link CalibrationSettings}, for saving purposes or if the user exits
+	 *                            without calibrating
+	 * @param alignmentMatrix The current alignment matrix, in case the user exits without calibrating
+	 */
 	public CalibrationMode(Size checkerboardSize, double squareSize, @Nullable CalibrationSettings calibrationSettings, @Nullable Mat alignmentMatrix){
 		super("Calibration", checkerboardSize, squareSize);
 		this.calibrationSettings = calibrationSettings;
 		this.alignmentMatrix = alignmentMatrix;
-		objectPoints = Collections.nCopies(CALIBRATION_IMAGES, Utils.generateChessboardPoints(checkerboardSize, squareSize));
+		objectPoints = Collections.nCopies(MIN_CALIBRATION_IMAGES, Utils.generateCheckerboardPoints(checkerboardSize, squareSize));
 		imagePoints = new ArrayList<>();
 	}
 
 	@Override
 	public void populateControls(FlexiweldApp app, List<Component> components){
+
 		super.populateControls(app, components);
+
 		components.add(captureButton = FlexiweldApp.createButton("\u2795 Capture", e -> captureCalibrationPoints(app)));
 		components.add(finishButton = FlexiweldApp.createButton(FlexiweldApp.CHECK_MARK + "Finish", e -> finishCalibration(app)));
 		components.add(saveButton = FlexiweldApp.createButton("\ud83d\udcbe Save Settings", e -> saveToFile(app)));
 		components.add(loadButton = FlexiweldApp.createButton("\ud83d\udcc2 Load Settings", e -> loadFromFile(app)));
 		components.add(exitButton = FlexiweldApp.createButton("\u21a9 Exit", e -> exit(app)));
+
 		finishButton.setForeground(FlexiweldApp.CONFIRM_TEXT_COLOUR);
 		finishButton.setEnabled(false);
 		saveButton.setEnabled(calibrationSettings != null);
@@ -81,24 +101,28 @@ public class CalibrationMode extends CheckerboardDetectionMode {
 		return super.annotateFrame(videoFeed, frame);
 	}
 
+	/** Returns a readable string for the progress readout based on the given number of images captured. */
 	private String getImageCountStatus(int captured){
-		return String.format("Capturing calibration images (%s/%s)", captured, CALIBRATION_IMAGES);
+		return String.format("Capturing calibration images (%s/%s)", captured, MIN_CALIBRATION_IMAGES);
 	}
 
+	/** Captures a set of calibration points from the current frame. */
 	private void captureCalibrationPoints(FlexiweldApp app){
 
 		if(!foundCheckerboard()) return; // Should never happen but just in case
 
-		app.getVideoFeed().pauseFor(1000);
+		app.getVideoFeed().pauseFor(1000); // Pause the video so the user can briefly see what they captured
 
 		imagePoints.add(getCorners());
 		progressReadout.setText(getImageCountStatus(imagePoints.size()));
+
 		if(imagePoints.size() == objectPoints.size()){
 			finishButton.setEnabled(true);
 			captureButton.setEnabled(false);
 		}
 	}
 
+	/** Performs the calibration using the captured images and updates the calibration settings with the result. */
 	private void finishCalibration(FlexiweldApp app){
 
 		if(imagePoints.size() != objectPoints.size()) return; // Should never happen but just in case
@@ -137,9 +161,13 @@ public class CalibrationMode extends CheckerboardDetectionMode {
 		app.setMode(new MeasurementMode(calibrationSettings, alignmentMatrix)); // Revert to the previous settings
 	}
 
+	/**
+	 * Displays a dialog prompting the user to select a save location and filename, and saves the current calibration
+	 * settings to that file, displaying an error message if the save was unsuccessful.
+	 */
 	private void saveToFile(FlexiweldApp app){
 
-		String path = app.saveWithOverwriteWarning(clbFilter);
+		String path = app.saveWithOverwriteWarning(CLB_FILTER);
 
 		if(path != null){
 
@@ -153,9 +181,13 @@ public class CalibrationMode extends CheckerboardDetectionMode {
 		}
 	}
 
+	/**
+	 * Displays a dialog prompting the user to select an existing calibration file, and loads the calibration settings
+	 * from that file, displaying an error message if loading was unsuccessful.
+	 */
 	private void loadFromFile(FlexiweldApp app){
 
-		app.fileChooser.setFileFilter(clbFilter);
+		app.fileChooser.setFileFilter(CLB_FILTER);
 
 		int result = app.fileChooser.showOpenDialog(app.getFrame());
 
@@ -164,11 +196,9 @@ public class CalibrationMode extends CheckerboardDetectionMode {
 			File file = app.fileChooser.getSelectedFile();
 			String path = file.getPath();
 
-			if(Arrays.stream(clbFilter.getExtensions()).noneMatch(s -> file.getName().endsWith(s))){
-				path = path + ".clb";
-			}
-
 			CalibrationSettings newSettings = CalibrationSettings.load(path);
+
+			String shortPath = Utils.ellipsise(path, 50, true);
 
 			if(newSettings != null){
 
@@ -183,12 +213,12 @@ public class CalibrationMode extends CheckerboardDetectionMode {
 				imagePoints.clear(); // Wipe the images now, we don't need them any more
 				finishButton.setEnabled(false);
 				captureButton.setEnabled(false);
-				progressReadout.setText("Calibration settings loaded from " + Utils.ellipsise(path, 50, true));
+				progressReadout.setText("Calibration settings loaded from " + shortPath);
 
 			}else{
-				JOptionPane.showMessageDialog(app.getFrame(), "Unable to load calibration settings",
+				JOptionPane.showMessageDialog(app.getFrame(), "Unable to load calibration settings from " + shortPath,
 						"Error", JOptionPane.ERROR_MESSAGE);
-				progressReadout.setText("Unable to load calibration settings");
+				progressReadout.setText("Unable to load calibration settings from " + shortPath);
 			}
 		}
 	}

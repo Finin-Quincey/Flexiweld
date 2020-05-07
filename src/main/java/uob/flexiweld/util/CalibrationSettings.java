@@ -18,7 +18,9 @@ import java.util.List;
  */
 public class CalibrationSettings {
 
+	/** The 3x3 camera matrix representing the camera properties. */
 	private final Mat cameraMatrix;
+	/** The single-column matrix of distortion coefficients representing the lens distortion. */
 	private final MatOfDouble distCoeffs;
 
 	/**
@@ -27,7 +29,7 @@ public class CalibrationSettings {
 	 */
 	public CalibrationSettings(Mat cameraMatrix, MatOfDouble distCoeffs){
 		this.cameraMatrix = cameraMatrix.clone(); // Copy so it can't change
-		this.distCoeffs = new MatOfDouble(distCoeffs);
+		this.distCoeffs = new MatOfDouble(distCoeffs); // Same here (clone() returns a Mat, not a MatOfDouble)
 	}
 
 	/**
@@ -35,8 +37,8 @@ public class CalibrationSettings {
 	 * @param source The image to undistort
 	 * @return The resulting undistorted image.
 	 */
-	// We don't really want to keep cloning the matrices each frame, but since we're only going to use it for
-	// undistortion we can keep it immutable by simply routing that through here
+	// We don't really want to clone the matrices each frame just for the sake of immutability, but since we're only
+	// going to use them for undistortion we can instead keep it immutable by simply routing that through here
 	public Mat undistort(Mat source){
 		return Utils.process(source, (s, d) -> Imgproc.undistort(s, d, cameraMatrix, distCoeffs));
 	}
@@ -55,8 +57,8 @@ public class CalibrationSettings {
 			for(double d : doubles) file.writeDouble(d);
 
 			doubles.clear();
-			Converters.Mat_to_vector_double(distCoeffs.t(), doubles); // Transpose because Converters requires 1 column
-			file.writeInt(doubles.size()); // distCoeffs may be various lengths
+			Converters.Mat_to_vector_double(distCoeffs.t(), doubles); // Transpose because Converters requires a column
+			file.writeInt(doubles.size()); // distCoeffs may be various lengths so we need to write the size first
 			for(double d : doubles) file.writeDouble(d);
 
 			return true;

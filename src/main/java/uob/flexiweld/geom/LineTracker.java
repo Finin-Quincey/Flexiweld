@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
  */
 public class LineTracker {
 
+	/** The maximum number of lines that can be displayed at once (does not affect processing, only display) */
 	private static final int MAX_DISPLAYED_LINES = 50;
 
 	/** Number of frames to average over when performing fuzzy average of lines */
@@ -41,6 +42,7 @@ public class LineTracker {
 	/** Whether {@link LineTracker#processNextFrame(Mat)} returns the result of the edge detector instead of the original frame. */
 	private boolean showEdges = false;
 
+	/** Stores the lines from the last n frames for averaging. Each sub-list is one frame, ordered oldest to newest. */
 	private final List<List<Line>> prevLines = new ArrayList<>();
 
 	/**
@@ -131,7 +133,7 @@ public class LineTracker {
 			}
 		}
 
-		// It definitely doesn't work without this, but I forgot why it's there!
+		// TODO: Why is this here? It definitely needs to be, but there should be a comment explaining why!
 		lines.sort(Comparator.comparing(Line::angle));
 
 		prevLines.add(lines);
@@ -233,32 +235,6 @@ public class LineTracker {
 		}
 
 		return averagedLines;
-	}
-
-	/**
-	 * Detects pairs of (approximately) parallel lines that are less than the specified width apart and returns a list
-	 * of lines equidistant from both lines of each pair.
-	 * @param lines A list of {@link Line} objects to find centrelines for (will not be modified by this method)
-	 * @param widthThreshold The maximum distance between pairs of lines for a centreline to be detected
-	 * @param angleThreshold The maximum angle between pairs of lines for a centreline to be detected
-	 * @return The resulting list of centrelines
-	 */
-	private static List<Line> findCentrelines(List<Line> lines, double widthThreshold, double angleThreshold){
-
-		List<Line> centrelines = new ArrayList<>();
-
-		for(int i=0; i<lines.size(); i++){
-
-			Line lineA = lines.get(i);
-			Line lineB = lines.get((i+1) % lines.size());
-
-			if(lineA.distanceTo(lineB.midpoint()) < widthThreshold && Line.acuteAngleBetween(lineA, lineB) < angleThreshold){
-				Line centreline = Line.equidistant(lineA, lineB).extended(0.25f);
-				centrelines.add(centreline);
-			}
-		}
-
-		return centrelines;
 	}
 
 }

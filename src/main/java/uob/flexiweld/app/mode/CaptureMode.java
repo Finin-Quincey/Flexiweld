@@ -23,8 +23,10 @@ import java.util.List;
 // This is an abstract class rather than an interface because certain things are shared by all modes
 public abstract class CaptureMode {
 
+	/** The display name of this capture mode, shown on the left of the status bar. */
 	public final String name;
 
+	/** Creates a new {@code CaptureMode} with the given display name. */
 	public CaptureMode(String name){
 		this.name = name;
 	}

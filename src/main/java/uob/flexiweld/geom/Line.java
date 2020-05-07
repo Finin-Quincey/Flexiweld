@@ -276,23 +276,23 @@ public class Line {
 	}
 
 	/**
-	 * Converts the given list of lines to a matrix of points, ready for transformations to be applied.
-	 * @param lines The lines to be converted
+	 * Packs the given list of lines into a matrix of points, ready for transformations to be applied.
+	 * @param lines A list of lines to be packed
 	 * @return The resulting matrix
 	 */
-	public static MatOfPoint2f toMatrix(List<Line> lines){
+	public static MatOfPoint2f pack(List<Line> lines){
 		MatOfPoint2f mat = new MatOfPoint2f();
 		lines.forEach(l -> mat.push_back(new MatOfPoint2f(l.toPoints())));
 		return mat;
 	}
 
 	/**
-	 * Converts the given matrix of points to a list of lines. This performs the inverse operation of
-	 * {@link Line#toMatrix(List)}.
-	 * @param mat The matrix to be converted
+	 * Unpacks the given matrix of points into a list of lines. This performs the inverse operation of
+	 * {@link Line#pack(List)}.
+	 * @param mat The matrix to be unpacked
 	 * @return The resulting list of lines
 	 */
-	public static List<Line> fromMatrix(MatOfPoint2f mat){
+	public static List<Line> unpack(MatOfPoint2f mat){
 
 		Point[] points = mat.toArray();
 		if(points.length % 2 != 0) throw new IllegalArgumentException("Number of points in matrix must be a multiple of 2");
