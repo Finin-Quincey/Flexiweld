@@ -5,11 +5,11 @@ import org.opencv.core.Point;
 import org.opencv.core.*;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.utils.Converters;
-import uob.flexiweld.util.Utils;
-import uob.flexiweld.util.CalibrationSettings;
 import uob.flexiweld.app.FlexiweldApp;
 import uob.flexiweld.app.VideoFeed;
 import uob.flexiweld.geom.Line;
+import uob.flexiweld.util.CalibrationSettings;
+import uob.flexiweld.util.Utils;
 
 import javax.swing.*;
 import java.awt.*;
@@ -119,8 +119,8 @@ public class AlignmentMode extends CheckerboardDetectionMode {
 		worldPts.add(new Point(0, (checkerboardSize.height - 1) * squareSize)); // Bottom left corner
 		worldPts.add(new Point((checkerboardSize.width - 1) * squareSize, (checkerboardSize.height - 1) * squareSize)); // Bottom right corner
 
-		Mat src = Converters.vector_Point2f_to_Mat(worldPts);
-		Mat dst = Converters.vector_Point2f_to_Mat(imagePts);
+		Mat src = Converters.vector_Point2f_to_Mat(imagePts);
+		Mat dst = Converters.vector_Point2f_to_Mat(worldPts);
 
 		alignmentMatrix = Imgproc.getPerspectiveTransform(src, dst);
 
@@ -136,7 +136,8 @@ public class AlignmentMode extends CheckerboardDetectionMode {
 		for(Line line : grid){
 			List<Point> points = Arrays.asList(line.getStart(), line.getEnd());
 			Mat lmat = Converters.vector_Point2f_to_Mat(points);
-			lmat = Utils.process(lmat, (s, d) -> Core.perspectiveTransform(s, d, alignmentMatrix));
+			// Invert the alignment matrix because here, we're transforming world -> image
+			lmat = Utils.process(lmat, (s, d) -> Core.perspectiveTransform(s, d, alignmentMatrix.inv()));
 			points = new ArrayList<>();
 			Converters.Mat_to_vector_Point2f(lmat, points);
 			transformedGrid.add(new Line(points.get(0), points.get(1)).extended(10));
