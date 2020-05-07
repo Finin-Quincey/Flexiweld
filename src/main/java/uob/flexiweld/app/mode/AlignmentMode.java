@@ -101,9 +101,11 @@ public class AlignmentMode extends CheckerboardDetectionMode {
 	@Override
 	public Mat annotateFrame(VideoFeed videoFeed, Mat frame){
 
-		for(Line line : transformedGrid){
-			Imgproc.line(frame, videoFeed.transformForDisplay(line.getStart()),
-					videoFeed.transformForDisplay(line.getEnd()), GRID_COLOUR, 2);
+		if(transformedGrid != null){
+			for(Line line : transformedGrid){
+				Imgproc.line(frame, videoFeed.transformForDisplay(line.getStart()),
+						videoFeed.transformForDisplay(line.getEnd()), GRID_COLOUR, 2);
+			}
 		}
 
 		alignButton.setEnabled(foundCheckerboard());
