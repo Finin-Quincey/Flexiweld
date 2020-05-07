@@ -31,9 +31,8 @@ public class CalibrationMode extends CheckerboardDetectionMode {
 	private static final FileNameExtensionFilter CLB_FILTER = Utils.createExtensionFilter("Calibration files", "clb");
 
 	/** The minimum number of calibration images required to perform the calibration. */
-	private static final int MIN_CALIBRATION_IMAGES = 10; // TODO: Make this an actual minimum, not a fixed number
+	private static final int MIN_CALIBRATION_IMAGES = 10;
 
-	private final List<Mat> objectPoints;
 	/** Stores the corner coordinates (in image pixels) of the detected calibration pattern for each frame. */
 	private final List<Mat> imagePoints;
 
@@ -62,7 +61,6 @@ public class CalibrationMode extends CheckerboardDetectionMode {
 		super("Calibration", checkerboardSize, squareSize);
 		this.calibrationSettings = calibrationSettings;
 		this.alignmentMatrix = alignmentMatrix;
-		objectPoints = Collections.nCopies(MIN_CALIBRATION_IMAGES, Utils.generateCheckerboardPoints(checkerboardSize, squareSize));
 		imagePoints = new ArrayList<>();
 	}
 
@@ -116,21 +114,23 @@ public class CalibrationMode extends CheckerboardDetectionMode {
 		imagePoints.add(getCorners());
 		progressReadout.setText(getImageCountStatus(imagePoints.size()));
 
-		if(imagePoints.size() == objectPoints.size()){
+		if(imagePoints.size() >= MIN_CALIBRATION_IMAGES){
 			finishButton.setEnabled(true);
-			captureButton.setEnabled(false);
 		}
 	}
 
 	/** Performs the calibration using the captured images and updates the calibration settings with the result. */
 	private void finishCalibration(FlexiweldApp app){
 
-		if(imagePoints.size() != objectPoints.size()) return; // Should never happen but just in case
+		if(imagePoints.size() < MIN_CALIBRATION_IMAGES) return; // Should never happen but just in case
+
+		// Generate the appropriate number of object point matrices
+		List<Mat> objectPoints = Collections.nCopies(imagePoints.size(), Utils.generateCheckerboardPoints(checkerboardSize, squareSize));
 
 		// Output matrices
 		Mat cameraMatrix = new Mat(3, 3, CvType.CV_32F);
 		MatOfDouble distCoeffs = new MatOfDouble(new Mat(1, 4, CvType.CV_64F));
-		List<Mat> rvecs = new ArrayList<>();
+		List<Mat> rvecs = new ArrayList<>(); // Currently not using these last two for anything
 		List<Mat> tvecs = new ArrayList<>();
 
 		Calib3d.calibrateCamera(objectPoints, imagePoints, app.getVideoFeed().getCameraResolution(), cameraMatrix, distCoeffs, rvecs, tvecs);
@@ -139,6 +139,7 @@ public class CalibrationMode extends CheckerboardDetectionMode {
 		alignmentMatrix = null; // Calibration always discards the alignment matrix (because it's no longer valid!)
 		imagePoints.clear(); // Wipe the images now, we're done with them
 		finishButton.setEnabled(false);
+		captureButton.setEnabled(false);
 		progressReadout.setText("Calibration successful");
 
 	}
