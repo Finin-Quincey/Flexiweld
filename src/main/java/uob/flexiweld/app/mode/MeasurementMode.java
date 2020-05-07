@@ -4,13 +4,13 @@ import com.sun.istack.internal.Nullable;
 import org.opencv.core.Point;
 import org.opencv.core.*;
 import org.opencv.imgproc.Imgproc;
-import uob.flexiweld.util.Utils;
-import uob.flexiweld.util.CalibrationSettings;
 import uob.flexiweld.app.FlexiweldApp;
 import uob.flexiweld.app.VideoFeed;
 import uob.flexiweld.geom.Intersection;
 import uob.flexiweld.geom.Line;
 import uob.flexiweld.geom.LineTracker;
+import uob.flexiweld.util.CalibrationSettings;
+import uob.flexiweld.util.Utils;
 
 import java.awt.*;
 import java.util.List;
@@ -213,8 +213,9 @@ public class MeasurementMode extends LiveMode {
 
 			if(showIntersections){
 				Imgproc.drawMarker(frame, point, INTERSECTION_COLOUR, Imgproc.MARKER_CROSS, 14, 2);
-				Imgproc.putText(frame, String.format("(%.2f, %.2f)", point.x, point.y), point,
-						Core.FONT_HERSHEY_PLAIN, 2, INTERSECTION_COLOUR, 2);
+				// If we're going to display coordinates, we need to store the original point
+//				Imgproc.putText(frame, String.format("(%.2f, %.2f)", point.x, point.y), point,
+//						Core.FONT_HERSHEY_PLAIN, 2, INTERSECTION_COLOUR, 2);
 			}
 
 			if(showAngles){
