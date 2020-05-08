@@ -192,7 +192,7 @@ public class VideoFeed {
 		// Processing
 		out = mode.processFrame(this, raw); // Allow the current capture mode to do whatever processing it does
 
-		out = Utils.process(out, (s, d) -> Core.flip(s, d, 1)); // Mirror in x
+		//out = Utils.process(out, (s, d) -> Core.flip(s, d, 1)); // Mirror in x
 		out = Utils.process(out, (s, d) -> Imgproc.resize(s, d, outputSize)); // Scale to fit the window
 
 		// Add the annotations afterwards so they don't get scaled or flipped
