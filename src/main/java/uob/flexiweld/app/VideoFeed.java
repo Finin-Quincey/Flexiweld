@@ -46,6 +46,8 @@ public class VideoFeed {
 	/** The maximum framerate of the camera, defined by the hardware itself. */
 	private double maxFps;
 
+	/** Whether to mirror the output image. */
+	private boolean mirror = false;
 	/** The factor by which the output is scaled from the raw image. This is set by {@link VideoFeed#fit(int, int)}. */
 	private double scaleFactor;
 	/** The dimensions of the output image drawn on the screen. This is set by {@link VideoFeed#fit(int, int)}. */
@@ -164,6 +166,16 @@ public class VideoFeed {
 		outputSize = new Size(newWidth, newHeight);
 	}
 
+	/** Toggles whether the output image is mirrored. */
+	public void toggleMirror(){
+		mirror = !mirror;
+	}
+
+	/** Returns whether the output image is currently mirrored. */
+	public boolean isMirrored(){
+		return mirror;
+	}
+
 	/**
 	 * Reads the next frame of this video feed, processes it according to the current mode, and returns the resulting
 	 * output image as an {@link Image} object, ready for rendering into a Swing UI or similar.
@@ -192,7 +204,7 @@ public class VideoFeed {
 		// Processing
 		out = mode.processFrame(this, raw); // Allow the current capture mode to do whatever processing it does
 
-		//out = Utils.process(out, (s, d) -> Core.flip(s, d, 1)); // Mirror in x
+		if(mirror) out = Utils.process(out, (s, d) -> Core.flip(s, d, 1)); // Mirror in x
 		out = Utils.process(out, (s, d) -> Imgproc.resize(s, d, outputSize)); // Scale to fit the window
 
 		// Add the annotations afterwards so they don't get scaled or flipped
@@ -214,7 +226,8 @@ public class VideoFeed {
 	 * @return The resulting point, in the output (screen) coordinate space
 	 */
 	public Point transformForDisplay(Point point){
-		return new Point((int)((point.x) * scaleFactor), (int)(point.y * scaleFactor));
+		double x = mirror ? cameraResolution.width - point.x : point.x;
+		return new Point((int)(x * scaleFactor), (int)(point.y * scaleFactor));
 	}
 
 	/**

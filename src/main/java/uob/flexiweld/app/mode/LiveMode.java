@@ -31,11 +31,18 @@ public abstract class LiveMode extends CaptureMode {
 
 	@Override
 	public void populateControls(FlexiweldApp app, List<Component> components){
+
 		components.add(FlexiweldApp.createButton("\u23f9 Stop", e -> app.toggleCamera()));
+
 		JToggleButton pauseButton = FlexiweldApp.createToggleButton("\u275a\u275a Pause", e -> app.getVideoFeed().togglePause());
 		pauseButton.setSelected(app.getVideoFeed().isPaused());
 		components.add(pauseButton);
+
 		components.add(FlexiweldApp.createButton("\ud83d\udcf7 Snapshot", e -> takeSnapshot(app)));
+
+		JToggleButton mirrorButton = FlexiweldApp.createToggleButton("\u25e7 Mirror", e -> app.getVideoFeed().toggleMirror());
+		mirrorButton.setSelected(app.getVideoFeed().isMirrored());
+		components.add(mirrorButton);
 	}
 
 	@Override
