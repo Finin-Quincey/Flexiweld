@@ -214,7 +214,7 @@ public class VideoFeed {
 	 * @return The resulting point, in the output (screen) coordinate space
 	 */
 	public Point transformForDisplay(Point point){
-		return new Point((int)((cameraResolution.width - point.x) * scaleFactor), (int)(point.y * scaleFactor));
+		return new Point((int)((point.x) * scaleFactor), (int)(point.y * scaleFactor));
 	}
 
 	/**
