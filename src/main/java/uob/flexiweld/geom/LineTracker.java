@@ -34,7 +34,7 @@ public class LineTracker {
 	/** Lines within this angle of each other are considered parallel */
 	private double angleThreshold = Math.toRadians(10);
 	/** Parallel lines within this distance of each other are considered coincident */
-	private double proximityThreshold = 6;
+	private double proximityThreshold = 4;
 	/** Lines whose endpoints both lie within this distance of the edge of the frame will be discarded */
 	private double border = 50;
 	/** Whether the raw detected lines will be drawn onto the frame when {@link LineTracker#processNextFrame(Mat)} is called */
