@@ -44,9 +44,9 @@ public class MeasurementMode extends LiveMode {
 
 	// TODO: Make these configurable
 	/** Lines within this angle of each other are considered parallel */
-	private static final double ANGLE_THRESHOLD = Math.toRadians(10);
+	private static final double ANGLE_THRESHOLD = Math.toRadians(5);
 	/** Pairs of parallel, non-coincident lines within this distance of each other are considered to be tubes */
-	private static final double WIDTH_THRESHOLD = 120; // Excludes e.g. the edges of the test card
+	private static final double WIDTH_THRESHOLD = 50; // Excludes e.g. the edges of the test card
 
 	private static final Mat IDENTITY_MATRIX_3X3 = Mat.eye(3, 3, CvType.CV_32F);
 

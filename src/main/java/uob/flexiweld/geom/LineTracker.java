@@ -34,9 +34,9 @@ public class LineTracker {
 	/** Lines within this angle of each other are considered parallel */
 	private double angleThreshold = Math.toRadians(10);
 	/** Parallel lines within this distance of each other are considered coincident */
-	private double proximityThreshold = 4;
+	private double proximityThreshold = 10;
 	/** Lines whose endpoints both lie within this distance of the edge of the frame will be discarded */
-	private double border = 50;
+	private double border = 20;
 	/** Whether the raw detected lines will be drawn onto the frame when {@link LineTracker#processNextFrame(Mat)} is called */
 	private boolean annotations = false;
 	/** Whether {@link LineTracker#processNextFrame(Mat)} returns the result of the edge detector instead of the original frame. */
@@ -158,7 +158,7 @@ public class LineTracker {
 
 		// Probabilistic Hough Line Transform
 		Mat lineMatrix = new Mat(); // will hold the results of the detection
-		Imgproc.HoughLinesP(source, lineMatrix, 1, Math.PI / 180, 100, 50, 100); // runs the actual detection
+		Imgproc.HoughLinesP(source, lineMatrix, 1, Math.PI / 180, 40, 20, 20); // runs the actual detection
 
 		List<Line> lines = new ArrayList<>();
 
