@@ -5,10 +5,8 @@ import uob.flexiweld.geom.Line;
 
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
+import java.util.*;
 import java.util.function.BiConsumer;
 
 /**
@@ -172,15 +170,23 @@ public final class Utils {
 
 		List<Line> centrelines = new ArrayList<>();
 
-		for(int i=0; i<lines.size(); i++){
+		List<Line> linesModifiable = new ArrayList<>(lines);
 
-			Line lineA = lines.get(i);
-			Line lineB = lines.get((i+1) % lines.size());
+		while(!linesModifiable.isEmpty()){
 
-			if(lineA.distanceTo(lineB.midpoint()) < widthThreshold && Line.acuteAngleBetween(lineA, lineB) < angleThreshold){
-				Line centreline = Line.equidistant(lineA, lineB).extended(0.25f);
-				centrelines.add(centreline);
-			}
+			Line ref = linesModifiable.get(0);
+
+			lines.stream().filter(l -> l != ref && Line.acuteAngleBetween(ref, l) < angleThreshold)
+					.min(Comparator.comparingDouble(l -> ref.distanceTo(l.midpoint())))
+					.ifPresent(l -> {
+						if(ref.distanceTo(l.midpoint()) < widthThreshold){
+							Line centreline = Line.equidistant(ref, l).extended(0.2f);
+							centrelines.add(centreline);
+							linesModifiable.remove(l);
+						}
+					});
+
+			linesModifiable.remove(ref);
 		}
 
 		return centrelines;
