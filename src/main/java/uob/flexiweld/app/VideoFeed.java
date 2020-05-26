@@ -118,8 +118,8 @@ public class VideoFeed {
 			return false;
 		}
 
-		vc.set(Videoio.CAP_PROP_FRAME_WIDTH, 1920);
-		vc.set(Videoio.CAP_PROP_FRAME_HEIGHT, 1080);
+//		vc.set(Videoio.CAP_PROP_FRAME_WIDTH, 1920);
+//		vc.set(Videoio.CAP_PROP_FRAME_HEIGHT, 1080);
 
 		if(!vc.read(raw)) return false; // For some strange reason open can succeed when the camera is busy...
 		cameraResolution = raw.size();
