@@ -21,6 +21,9 @@ public abstract class LiveMode extends CaptureMode {
 	/** A file filter for JPEG images. */
 	private static final FileNameExtensionFilter JPEG_FILTER = Utils.createExtensionFilter("JPEG images", "jpg", "jpeg", "jfif");
 
+	/** Status bar label for the camera resolution readout. */
+	private JLabel resolutionReadout;
+
 	/** Status bar label for the camera framerate readout. */
 	private JLabel fpsReadout;
 
@@ -48,11 +51,13 @@ public abstract class LiveMode extends CaptureMode {
 	@Override
 	public void populateStatusBar(List<Component> components){
 		super.populateStatusBar(components);
+		resolutionReadout = FlexiweldApp.addStatusText("", components);
 		fpsReadout = FlexiweldApp.addStatusText("", components);
 	}
 
 	@Override
 	public Mat annotateFrame(VideoFeed videoFeed, Mat frame){
+		resolutionReadout.setText(videoFeed.getCameraResolution().toString());
 		fpsReadout.setText(String.format("%.4g fps", videoFeed.getFps()));
 		return frame; // Do nothing to the frame
 	}
