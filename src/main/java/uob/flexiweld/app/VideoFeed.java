@@ -6,9 +6,9 @@ import org.opencv.highgui.HighGui;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.videoio.VideoCapture;
 import org.opencv.videoio.Videoio;
-import uob.flexiweld.util.Utils;
 import uob.flexiweld.app.mode.CaptureMode;
 import uob.flexiweld.geom.Line;
+import uob.flexiweld.util.Utils;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -117,6 +117,9 @@ public class VideoFeed {
 			System.out.println("Failed to open video capture");
 			return false;
 		}
+
+		vc.set(Videoio.CAP_PROP_FRAME_WIDTH, 1920);
+		vc.set(Videoio.CAP_PROP_FRAME_HEIGHT, 1080);
 
 		if(!vc.read(raw)) return false; // For some strange reason open can succeed when the camera is busy...
 		cameraResolution = raw.size();
